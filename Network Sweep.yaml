@@ -1,0 +1,82 @@
+type: grid
+cards:
+  - type: vertical-stack
+    cards:
+      - type: custom:mushroom-template-card
+        icon: |-
+          {% if is_state_attr('sensor.network_scanner', 'scanning', true) %}
+            mdi:loading
+          {% else %}
+            mdi:checkbox-marked-circle-outline
+          {% endif %}
+        icon_color: |-
+          {% if is_state_attr('sensor.network_scanner', 'scanning', true) %}
+            orange
+          {% else %}
+            green
+          {% endif %}
+        primary: |-
+          {% if is_state_attr('sensor.network_scanner', 'scanning', true) %}
+            ⏳ Sweep in Progress...
+          {% else %}
+            ✅ Network Sweep Idle
+          {% endif %}
+        secondary: |-
+          {% if is_state_attr('sensor.network_scanner', 'scanning', true) %}
+            Actively mapping subnets...
+          {% else %}
+            Last Sweep: {{ as_timestamp(states.sensor.network_scanner.last_changed) | timestamp_custom('%d/%m/%Y %I:%M %p') }}
+          {% endif %}
+        tap_action:
+          action: call-service
+          service: homeassistant.update_entity
+          target:
+            entity_id: sensor.network_scanner
+        layout: horizontal
+      - type: custom:flex-table-card
+        title: Network Inventory
+        entities:
+          include: sensor.network_scanner
+        sort_by: x.ip+
+        strict_num_sort: true
+        sortable: true
+        css:
+          table+: 'padding: 0px; border-collapse: collapse;'
+          th+: >-
+            background-color: var(--background-color-20); font-weight: bold;
+            padding: 8px; cursor: pointer;
+          td+: 'padding: 8px; border-bottom: 1px solid var(--divider-color);'
+        columns:
+          - name: Status
+            data: devices
+            modify: >-
+              (x.status === "offline" || x.status === "down") ? "🔴 <span
+              style=\"color:#f44336; font-weight:bold;
+              background-color:rgba(244,67,54,0.15); padding:2px 6px;
+              border-radius:4px; font-size:11px;\">OFFLINE</span>" : "🟢 <span
+              style=\"color:#4caf50; font-weight:bold;
+              background-color:rgba(76,175,80,0.15); padding:2px 6px;
+              border-radius:4px; font-size:11px;\">ONLINE</span>"
+          - name: IP Address
+            data: devices
+            modify: x.ip || '—'
+          - name: MAC Address
+            data: devices
+            modify: x.mac || '—'
+          - name: Custom Name
+            data: devices
+            modify: x.name || '—'
+          - name: Custom Description
+            data: devices
+            modify: x['type'] || '—'
+          - name: Vendor
+            data: devices
+            modify: x.vendor || '—'
+          - name: Last Seen
+            data: devices
+            modify: >-
+              new Date().toLocaleTimeString([], {hour: "2-digit", minute:
+              "2-digit"})
+    grid_options:
+      columns: full
+column_span: 4

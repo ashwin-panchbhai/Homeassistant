@@ -1,0 +1,26 @@
+type: grid
+cards:
+  - type: heading
+    heading: New section
+  - type: entities
+    entities:
+      - entity: script.execute_network_discovery_sweep
+        name: Network Scanner Engine
+        action_name: Scan Now
+  - type: custom:auto-entities
+    card:
+      type: entities
+      title: 🌐 Core Network Infrastructure Matrix
+      show_header_toggle: false
+    filter:
+      include:
+        - domain: device_tracker
+          options:
+            secondary_info: last-changed
+    sort:
+      attribute: icon
+      reverse: true
+    grid_options:
+      columns: full
+      rows: auto
+column_span: 2

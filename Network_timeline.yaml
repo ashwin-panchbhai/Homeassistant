@@ -1,0 +1,30 @@
+type: grid
+cards:
+  - type: heading
+    heading: New section
+  - type: history-graph
+    title: 📊 Recent Network Availability Timeline
+    hours_to_show: 6
+    entities:
+      - entity: sensor.network_scanner
+        name: 🌐 Total Scanner Status
+      - entity: device_tracker.192_168_1_2
+        name: Camera-C225
+      - entity: device_tracker.nokia_shanghai_bell_c2_07_10
+        name: 🏠 Nokia Router
+      - entity: device_tracker.hon_hai_precision_ind_bd_51_73
+        name: 📺 SonyTV
+      - entity: device_tracker.espressif_4c_73_ec
+        name: Fan-Kid
+      - entity: device_tracker.espressif_65_e2_34
+        name: Fan-Master
+      - entity: device_tracker.espressif_e9_24_e0
+        name: Fan-Hall-Left
+      - entity: device_tracker.espressif_54_a0_7c
+        name: Fan-Hall-Right
+      - entity: device_tracker.sm_g990e
+        name: Samsung S21
+    grid_options:
+      columns: 21
+      rows: auto
+column_span: 2
