@@ -1,0 +1,187 @@
+type: grid
+cards:
+  - type: entities
+    entities:
+      - entity: script.execute_network_discovery_sweep
+        name: Network Scanner Engine
+        action_name: Scan Now
+  - type: grid
+    square: false
+    columns: 1
+    grid_options:
+      columns: 48
+      rows: auto
+    cards:
+      - type: custom:mushroom-chips-card
+        alignment: center
+        chips:
+          - type: template
+            icon: mdi:ip-network
+            icon_color: blue
+            content: >
+              {% set trackers = states.device_tracker | list %} {% set ns =
+              namespace(ips=[], device_count=0) %} {% for d in trackers %}
+                {% if d.attributes is defined %}
+                  {% set ns.device_count = ns.device_count + 1 %}
+                  {% for key, val in d.attributes.items() %}
+                    {% if val is string and val | regex_search('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$') %}
+                      {% if val not in ns.ips and not val.startswith('127.') and not val.startswith('0.') %}
+                        {% set ns.ips = ns.ips + [val] %}
+                      {% endif %}
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+              {% endfor %} {% if ns.ips | count > 0 %}
+                Total Unique IPs: {{ ns.ips | count }}
+              {% else %}
+                Total Network Trackers: {{ ns.device_count }}
+              {% endif %}
+      - type: custom:auto-entities
+        layout_options:
+          grid_columns: full
+        card:
+          type: history-graph
+          title: 🌀 Cooling Fans Timeline
+          hours_to_show: 24
+          card_mod:
+            style: |
+              .chart-container {
+                margin-bottom: -15px !important;
+              }
+              /* Hides the bottom time labels and axis lines */
+              g.axis.x, .timeline-axis, shadow-root .axis {
+                display: none !important;
+              }
+        filter:
+          template: >
+            {% set trackers = states.device_tracker |
+            selectattr('attributes.icon', 'defined') | list %}
+
+            {% for d in trackers | sort(attribute='state', reverse=true) %}
+              {% if 'fan' in d.attributes.icon or 'ventilation' in d.attributes.icon or 'blower' in d.attributes.icon %}
+                {{ d.entity_id }},
+              {% endif %}
+            {% endfor %}
+      - type: custom:auto-entities
+        layout_options:
+          grid_columns: full
+        card:
+          type: history-graph
+          title: 🎛️ Smart Switches and Router Timeline
+          hours_to_show: 24
+          card_mod:
+            style: |
+              .chart-container {
+                margin-bottom: -15px !important;
+              }
+              g.axis.x, .timeline-axis, shadow-root .axis {
+                display: none !important;
+              }
+        filter:
+          template: >
+            {% set trackers = states.device_tracker |
+            selectattr('attributes.icon', 'defined') | list %}
+
+            {% for d in trackers | sort(attribute='state', reverse=true) %}
+              {% if 'switch' in d.attributes.icon or 'dip' in d.attributes.icon or 'toggle' in d.attributes.icon or 'router' in d.attributes.icon or 'lan' in d.attributes.icon or 'hub' in d.attributes.icon %}
+                {{ d.entity_id }},
+              {% endif %}
+            {% endfor %}
+      - type: custom:auto-entities
+        layout_options:
+          grid_columns: full
+        card:
+          type: history-graph
+          title: 📱 Mobile Devices Timeline
+          hours_to_show: 24
+          card_mod:
+            style: |
+              .chart-container {
+                margin-bottom: -15px !important;
+              }
+              g.axis.x, .timeline-axis, shadow-root .axis {
+                display: none !important;
+              }
+        filter:
+          template: >
+            {% set trackers = states.device_tracker |
+            selectattr('attributes.icon', 'defined') | list %}
+
+            {% for d in trackers | sort(attribute='state', reverse=true) %}
+              {% if 'cellphone' in d.attributes.icon or 'phone' in d.attributes.icon or 'mobile' in d.attributes.icon or 'tablet' in d.attributes.icon or 'ipad' in d.attributes.icon or 'laptop' in d.attributes.icon or 'computer' in d.attributes.icon %}
+                {{ d.entity_id }},
+              {% endif %}
+            {% endfor %}
+      - type: custom:auto-entities
+        layout_options:
+          grid_columns: full
+        card:
+          type: history-graph
+          title: 🍳 Smart Appliances Timeline
+          hours_to_show: 24
+          card_mod:
+            style: |
+              .chart-container {
+                margin-bottom: -15px !important;
+              }
+              g.axis.x, .timeline-axis, shadow-root .axis {
+                display: none !important;
+              }
+        filter:
+          template: >
+            {% set trackers = states.device_tracker |
+            selectattr('attributes.icon', 'defined') | list %}
+
+            {% for d in trackers | sort(attribute='state', reverse=true) %}
+              {% set icon = d.attributes.icon %}
+              {% if 'air-conditioner' in icon or 'ac' in icon or 'hvac' in icon or 'climate' in icon or 'dishwasher' in icon or 'washing' in icon or 'dryer' in icon or 'fridge' in icon or 'refrigerator' in icon or 'oven' in icon %}
+                {{ d.entity_id }},
+              {% endif %}
+            {% endfor %}
+      - type: custom:auto-entities
+        layout_options:
+          grid_columns: full
+        card:
+          type: history-graph
+          title: 📺 Media & Security Cameras Timeline
+          hours_to_show: 24
+          card_mod:
+            style: |
+              .chart-container {
+                margin-bottom: -15px !important;
+              }
+              g.axis.x, .timeline-axis, shadow-root .axis {
+                display: none !important;
+              }
+        filter:
+          template: >
+            {% set trackers = states.device_tracker |
+            selectattr('attributes.icon', 'defined') | list %}
+
+            {% for d in trackers | sort(attribute='value', reverse=true) %}
+              {% if 'tv' in d.attributes.icon or 'television' in d.attributes.icon or 'camera' in d.attributes.icon or 'cctv' in d.attributes.icon or 'video' in d.attributes.icon or 'alexa' in d.attributes.icon or 'speaker' in d.attributes.icon or 'audio' in d.attributes.icon %}
+                {{ d.entity_id }},
+              {% endif %}
+            {% endfor %}
+      - type: custom:auto-entities
+        layout_options:
+          grid_columns: full
+        card:
+          type: history-graph
+          title: 📦 Unassigned Network Clients Timeline
+          hours_to_show: 24
+        filter:
+          template: |
+            {% set trackers = states.device_tracker | list %}
+            {% for d in trackers | sort(attribute='state', reverse=true) %}
+              {% set icon = d.attributes.icon | default('') %}
+              {% set is_fan = 'fan' in icon or 'ventilation' in icon or 'blower' in icon %}
+              {% set is_switch = 'switch' in icon or 'dip' in icon or 'toggle' in icon or 'router' in icon or 'lan' in icon or 'hub' in icon %}
+              {% set is_mobile = 'cellphone' in icon or 'phone' in icon or 'mobile' in icon or 'tablet' in icon or 'ipad' in icon or 'laptop' in icon or 'computer' in icon %}
+              {% set is_appliance = 'air-conditioner' in icon or 'ac' in icon or 'hvac' in icon or 'climate' in icon or 'dishwasher' in icon or 'washing' in icon or 'dryer' in icon or 'fridge' in icon or 'refrigerator' in icon or 'oven' in icon %}
+              {% set is_media = 'tv' in icon or 'television' in icon or 'camera' in icon or 'cctv' in icon or 'video' in icon or 'alexa' in icon or 'speaker' in icon or 'audio' in icon %}
+              {% if not is_fan and not is_switch and not is_mobile and not is_appliance and not is_media %}
+                {{ d.entity_id }},
+              {% endif %}
+            {% endfor %}
+column_span: 4
