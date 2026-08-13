@@ -127,8 +127,8 @@ powercalc:
       create_energy_sensor: true
       fixed:
         power: >
-          {% set tv_state = states('media_player.tv_3') | lower %}
-          {% set active_app = states('sensor.sony_tv_active_app') %}
+          {% set tv_state = states('media_player.tv_3') | default('') | trim | lower %}
+          {% set active_app = states('sensor.sony_tv_active_app') | default('') | trim %}
           {% if tv_state in ['off', 'standby', 'unavailable', 'unknown'] %}
             0.5
           {% elif tv_state in ['on', 'playing', 'idle', 'paused', 'buffering'] %}
@@ -159,7 +159,6 @@ powercalc:
           "Castle": 110.0
           "Off": 0.5
 
-
     # --- 7. LG QUADWASH DISHWASHER (ENTERPRISE-GRADE SPECIFICATIONS) ---
     - entity_id: sensor.dishwasher
       unique_id: powercalc_lg_dishwasher
@@ -169,22 +168,26 @@ powercalc:
       ignore_unavailable_state: false
       fixed:
         power: >-
-          {% if states('sensor.dishwasher') | trim | lower in ['unavailable', 'unknown'] or states('sensor.dishwasher_process_state') | trim | lower in ['unavailable', 'unknown'] %}
+          {% set dishwasher_state = states('sensor.dishwasher') | default('') | trim | lower %}
+          {% set proc_state = states('sensor.dishwasher_process_state') | default('') | trim | lower %}
+          {% set countdown = states('sensor.dishwasher_countdown_time') | default('') | trim %}
+          {% set current_course = states('sensor.dishwasher_current_course') | default('') | trim | lower %}
+          {% if dishwasher_state in ['unavailable', 'unknown'] or proc_state in ['unavailable', 'unknown'] %}
             0.0
-          {% elif states('sensor.dishwasher_countdown_time') | trim in ['0:00:00', '0:00', '0'] %}
+          {% elif countdown in ['0:00:00', '0:00', '0'] %}
             0.5
-          {% elif states('binary_sensor.dishwasher_auto_door') | trim | lower in ['on', 'open', 'true'] and states('sensor.dishwasher_process_state') | trim | lower in ['off', '-', 'standby', 'dry', 'drying', 'none', ''] %}
+          {% elif (states('binary_sensor.dishwasher_auto_door') | default('') | trim | lower) in ['on', 'open', 'true'] and proc_state in ['off', '-', 'standby', 'draining'] %}
             4.2
-          {% elif states('sensor.dishwasher') | trim | lower in ['off', 'power_off', 'power_fail', 'end', 'initial'] or states('sensor.dishwasher_process_state') | trim | lower in ['off', '-', 'standby', 'none', ''] %}
+          {% elif dishwasher_state in ['off', 'power_off', 'power_fail', 'end', 'initial'] or proc_state in ['off', '-', 'standby'] %}
             0.5
-          {% elif states('sensor.dishwasher') | trim | lower == 'pause' %}
+          {% elif dishwasher_state == 'pause' %}
             3.8
-          {% elif states('sensor.dishwasher_process_state') | trim | lower in ['rinsing', 'rinse'] or states('sensor.dishwasher_current_course') | trim | lower == 'rinse' %}
+          {% elif proc_state in ['rinsing', 'rinse'] or current_course == 'rinse' %}
             65.0
-          {% elif states('sensor.dishwasher_process_state') | trim | lower in ['dry', 'drying', 'night dry', 'night_dry'] %}
+          {% elif proc_state in ['dry', 'drying', 'night dry', 'night_dry'] %}
             30.0
-          {% elif states('sensor.dishwasher_process_state') | trim | lower in ['washing', 'wash'] %}
-            {% set course = states('sensor.dishwasher_current_course') | trim | lower %}
+          {% elif proc_state in ['washing', 'wash'] %}
+            {% set course = current_course %}
             {% if course == 'eco' %} 850.0
             {% elif course == 'auto' %} 1200.0
             {% elif course in ['turbo', 'express'] %} 1450.0
@@ -223,25 +226,39 @@ powercalc:
       create_energy_sensor: true
       ignore_unavailable_state: true
       fixed:
-        power: "{% if states('camera.door_hd_stream') | lower in ['unavailable', 'unknown'] %}0.0{% elif states('binary_sensor.door_privacy_mode') | lower == 'on' %}1.8{% elif states('binary_sensor.door_motion_detection') | lower == 'on' and states('switch.door_auto_track') | lower == 'on' %}6.5{% elif states('camera.door_hd_stream') | lower == 'streaming' or states('camera.door_hd_stream_direct') | lower == 'streaming' %}4.5{% else %}3.0{% endif %}"
+        power: >-
+          {% set cam = states('camera.door_hd_stream') | default('') | trim | lower %}
+          {% set privacy = states('binary_sensor.door_privacy_mode') | default('') | trim | lower %}
+          {% set motion = states('binary_sensor.door_motion') | default('') | trim | lower %}
+          {% if cam in ['unavailable', 'unknown'] %}
+            0.0
+          {% elif privacy == 'on' %}
+            1.8
+          {% elif motion == 'on' %}
+            3.5
+          {% else %}
+            0.8
+          {% endif %}
 
     # --- 10. HIKVISION INDOOR STATION SCREEN (COMPACT STATE PROFILE) ---
     - entity_id: device_tracker.fn_link_technology_88_65_c3
       unique_id: powercalc_hikvision_indoor_screen
       name: "Hikvision Camera Screen Consumption"
-      mode: fixed                     # Structure: Set back to 'fixed' to pass validation
+      mode: fixed
       create_energy_sensor: true
-      ignore_unavailable_state: false # Structure: Set to false to avoid the tracker state bug
+      ignore_unavailable_state: false
       fixed:
-        power: >                      # Structure: Consolidates execution strings natively
-          {% if states('device_tracker.fn_link_technology_88_65_c3') | lower in ['unavailable', 'unknown', 'not_home'] or states('sensor.embedded_net_vis_call_status') | lower in ['unavailable', 'unknown'] %}
+        power: >
+          {% set tracker_state = states('device_tracker.fn_link_technology_88_65_c3') | default('') | trim | lower %}
+          {% set call_status = states('sensor.embedded_net_vis_call_status') | default('') | trim | lower %}
+          {% if tracker_state in ['unavailable', 'unknown', 'not_home'] or call_status in ['unavailable', 'unknown'] %}
             1.5
-          {% elif states('device_tracker.fn_link_technology_88_65_c3') | lower != 'home' %}
+          {% elif tracker_state != 'home' %}
             0.0
           {% else %}
-            {% if states('sensor.embedded_net_vis_call_status') | string | strip | lower in ['ringing', 'talk', 'call', 'active'] %}
+            {% if call_status in ['ringing', 'talk', 'call', 'active'] %}
               6.0
-            {% elif states('sensor.embedded_net_vis_call_status') | string | strip | lower == 'idle' %}
+            {% elif call_status == 'idle' %}
               4.0
             {% else %}
               1.5
@@ -257,8 +274,8 @@ powercalc:
       ignore_unavailable_state: true
       fixed:
         power: >-
-          {% set machine = (states('sensor.washer_machine_state')) | lower %}
-          
+          {% set machine = states('sensor.washer_machine_state') | default('') | trim | lower %}
+
           {# #1. Machine completely Off or disconnected #}
           {% if machine in ['unavailable', 'unknown', 'none', 'stop', 'stopped'] %}
             0.0
@@ -266,44 +283,44 @@ powercalc:
           {# 2. Machine is On but paused/idle #}
           {% elif machine == 'pause' %}
             4.0
-            
+
           {# 3. Machine is actively executing a cycle #}
           {% elif machine == 'run' %}
-            {% set job = states('sensor.washer_job_state') | lower %}
-            {% set temp = states('select.washer_water_temperature') | lower %}
-            {% set spin = states('select.washer_spin_level') | lower %}
-            
+            {% set job = states('sensor.washer_job_state') | default('') | trim | lower %}
+            {% set temp = states('select.washer_water_temperature') | default('') | trim | lower %}
+            {% set spin = states('select.washer_spin_level') | default('') | trim | lower %}
+
             {# Phase A: Weighing/Sensing initial load #}
             {% if job in ['weight_sensing', 'none'] %}
               60.0
-              
+
             {# Phase B: Washing with High Hot Water Temp (Heater Active) #}
             {% elif job in ['wash', 'pre_wash', 'delay_wash'] and temp in ['60', '90'] %}
               1800.0
             {% elif job in ['wash', 'pre_wash', 'delay_wash'] and temp == '40' %}
               1000.0
-              
+
             {# Phase C: Washing with Cold / Eco Temperature #}
             {% elif job in ['wash', 'pre_wash', 'delay_wash'] %}
               150.0
-              
+
             {# Phase D: High Speed Spinning extraction #}
             {% elif job in ['spin', 'ai_spin'] and spin in ['1000', '1200', '1400'] %}
               450.0
             {% elif job in ['spin', 'ai_spin'] %}
               250.0
-              
+
             {# Phase E: Rinsing, Pump discharging, and Cooling #}
             {% elif job in ['rinse', 'ai_rinse', 'cooling'] %}
               80.0
-              
+
             {# Phase F: Finished cycle, standing by / wrinkle prevention tumbling #}
             {% elif job in ['finish', 'wrinkle_prevent'] %}
               45.0
             {% else %}
               150.0
             {% endif %}
-            
+
           {# Fallback #}
           {% else %}
             0.5
@@ -319,9 +336,9 @@ template:
         unique_id: dishwasher_current_status
         icon: mdi:power
         state: >-
-          {% set device = states('device_tracker.lg_innotek_ab_84_7c') %}
-          {% set pwr = states('sensor.dishwasher') | lower %}
-          {% set run_state = states('sensor.dishwasher') %}
+          {% set device = states('device_tracker.lg_innotek_ab_84_7c') | default('') | trim | lower %}
+          {% set pwr = states('sensor.dishwasher') | default('') | trim | lower %}
+          {% set run_state = states('sensor.dishwasher') | default('') | trim %}
           {% if device in ['unavailable', 'unknown', 'not_home'] or pwr in ['off', 'power_off'] %}
             Off
           {% elif pwr == 'on' and run_state not in ['unavailable', 'unknown', 'standby', 'none', '-', ''] %}
@@ -334,7 +351,7 @@ template:
         unique_id: dishwasher_process_state_bridge
         icon: mdi:sync
         state: >-
-          {% set process = states('sensor.dishwasher_process_state') %}
+          {% set process = states('sensor.dishwasher_process_state') | default('') | trim %}
           {% if process not in ['unavailable', 'unknown', 'none', ''] %}
             {{ process }}
           {% else %}
@@ -347,7 +364,7 @@ template:
         unit_of_measurement: "kWh"
         device_class: energy
         state: >-
-          {% set current_status = states('sensor.dishwasher') | lower %}
+          {% set current_status = states('sensor.dishwasher') | default('') | trim | lower %}
           {% set telemetry_energy = states('sensor.lg_dishwasher_consumption_energy') | float(none) %}
           {% set stored_cache = states('sensor.dishwasher_last_cycle_energy_consumption') | float(0.0) %}
           {% if current_status == 'end' and telemetry_energy is not none and telemetry_energy > 0.0 %}
@@ -419,7 +436,7 @@ template:
             {% set fallback = states('sensor.dishwasher_billing_cycle_running_cost_inr') %}
             {{ fallback | float(0.0) if fallback not in ['unknown', 'unavailable', 'none'] else 0.00 }}
           {% endif %}
-          
+
       # --- SAMSUNG WASHER PROJECTED MONTHLY COST ----
       - name: "Samsung Washer Projected Monthly Cost INR"
         unique_id: samsung_washer_projected_monthly_cost_inr
@@ -481,8 +498,8 @@ template:
         unique_id: samsung_washer_initial_time
         icon: mdi:clock-outline
         state: >-
-          {% set job = states('sensor.washer_job_state') | lower | trim %}
-          {% set temp = states('select.washer_water_temperature') | lower | trim %}
+          {% set job = states('sensor.washer_job_state') | default('') | trim | lower %}
+          {% set temp = states('select.washer_water_temperature') | default('') | trim | lower %}
           {% if job in ['unavailable', 'unknown', 'none', 'finish', 'stopped', 'off'] or temp in ['none', 'unavailable', 'unknown'] %}
             0:00:00
           {% else %}
@@ -495,14 +512,13 @@ template:
             {% endif %}
           {% endif %}
 
-
       # --- SAMSUNG WASHER COMPUTED REMAINING TIME ----
       - name: "Samsung Washer Remaining Time"
         unique_id: samsung_washer_remaining_time
         icon: mdi:timer-sand
         state: >-
-          {% set job = states('sensor.washer_job_state') | lower | trim %}
-          {% set completion = states('sensor.washer_completion_time') | trim %}
+          {% set job = states('sensor.washer_job_state') | default('') | trim | lower %}
+          {% set completion = states('sensor.washer_completion_time') | default('') | trim %}
           {% if job not in ['unavailable', 'unknown', 'none', 'finish', 'stopped', 'off'] and completion not in ['unknown', 'unavailable', 'none', '', '-'] %}
             {% set total_seconds = (as_datetime(completion) - now()).total_seconds() %}
             {% if total_seconds > 0 %}
@@ -521,14 +537,13 @@ template:
         unique_id: samsung_washer_tub_maintenance
         icon: mdi:sparkles
         state: >-
-          {% set status = states('sensor.washer_display_status') | lower | trim %}
-          {% set job = states('sensor.washer_job_state') | lower | trim %}
+          {% set status = states('sensor.washer_display_status') | default('') | trim | lower %}
+          {% set job = states('sensor.washer_job_state') | default('') | trim | lower %}
           {% if 'clean' in status or 'clean' in job or status in ['eco_tub_clean', 'tub_clean'] %}
             Required
           {% else %}
             OK
           {% endif %}
-
 
       # --- SONY TV DAILY ELECTRICITY COST ----
       - name: "Sony TV Daily Electricity Cost INR 2"
@@ -566,7 +581,7 @@ template:
         device_class: power
         state_class: measurement
         state: >-
-          {% set master_app = states('sensor.sony_tv_active_app') | string | trim %}
+          {% set master_app = states('sensor.sony_tv_active_app') | default('') | trim %}
           {% if master_app in ['Off', 'unknown', 'unavailable', 'None', 'none', ''] %}
             0.0
           {% elif master_app == 'Home Screen' %}
@@ -597,12 +612,32 @@ template:
               {{ self_state if self_state >= 0.0 else 0.0 }}
             {% endif %}
           data_status: >-
-            {% set connection = states('sensor.mahavitran_smart_meter_170781431187_connection_status') %}
-            {% set tracker = states('sensor.living_room_mahavitran_smart_meter_170781431187_mahavitran_monthly_usage_tracker') %}
-            {% if connection == 'Connected' and tracker not in ['unknown', 'unavailable'] and (tracker | float(0)) >= 0.0 %}
+            {% set connection = states('sensor.mahavitran_smart_meter_170781431187_connection_status') | default('') | trim %}
+            {% set tracker = states('sensor.living_room_mahavitran_smart_meter_170781431187_mahavitran_monthly_usage_tracker') | default('') %}
+            {% if connection == 'Connected' and tracker not in ['unknown', 'unavailable', ''] and (tracker | float(-1)) >= 0.0 %}
               Live
             {% else %}
               Cached Fallback
+            {% endif %}
+          data_source: >-
+            {% set connection = states('sensor.mahavitran_smart_meter_170781431187_connection_status') | default('') | trim %}
+            {% set tracker = states('sensor.living_room_mahavitran_smart_meter_170781431187_mahavitran_monthly_usage_tracker') | default('') %}
+            {% if connection == 'Connected' and tracker not in ['unknown', 'unavailable', ''] and (tracker | float(-1)) >= 0.0 %}
+              Live
+            {% else %}
+              Cached
+            {% endif %}
+          last_tracker_update: >-
+            {% if states('sensor.living_room_mahavitran_smart_meter_170781431187_mahavitran_monthly_usage_tracker') not in ['unknown','unavailable','none',''] %}
+              {{ as_timestamp(states.sensor.living_room_mahavitran_smart_meter_170781431187_mahavitran_monthly_usage_tracker.last_changed) | timestamp_custom('%Y-%m-%d %H:%M:%S', true) }}
+            {% else %}
+              -
+            {% endif %}
+          last_base_reading_update: >-
+            {% if states('sensor.mahavitran_smart_meter_170781431187_current_reading') not in ['unknown','unavailable','none',''] %}
+              {{ as_timestamp(states.sensor.mahavitran_smart_meter_170781431187_current_reading.last_changed) | timestamp_custom('%Y-%m-%d %H:%M:%S', true) }}
+            {% else %}
+              -
             {% endif %}
         state: >-
           {% set base_reading = states('sensor.mahavitran_smart_meter_170781431187_current_reading') | float(-1) %}
@@ -624,7 +659,12 @@ template:
         state_class: total_increasing
         attributes:
           dynamic_date_label: >-
-            Since {{ as_timestamp(states('input_datetime.mahavitran_last_bill_date')) | timestamp_custom('%b %-d', true) }}
+            {% set dt = states('input_datetime.mahavitran_last_bill_date') | default('') %}
+            {% if dt not in ['', 'unknown', 'unavailable'] %}
+              Since {{ as_timestamp(dt) | timestamp_custom('%b %-d', true) }}
+            {% else %}
+              Since -
+            {% endif %}
         state: >-
           {% set current_odo = states('sensor.mahavitran_smart_meter_170781431187_current_reading') | float(-1) %}
           {% if current_odo > 0.0 %}
@@ -632,7 +672,6 @@ template:
           {% else %}
             {{ states('sensor.mahavitran_units_consumed_since_bill_date') | float(0.0) }}
           {% endif %}
-
 
       # --- MAHAVITRAN SUB-COMPONENT ENGINE: CORE ENERGY ---
       - name: "Mahavitran Core Energy Cost Calculated"
@@ -729,67 +768,6 @@ template:
           {% set net_bill = base_taxable_subtotal + electricity_duty - government_subsidy - adjustments %}
           {{ net_bill | round(2) if net_bill > 0.0 else 0.00 }}
 
-      # --- SONY TV ENGINE ACTIVE APPLICATION RESOLVER ---
-      - name: "Sony TV Active App"
-        unique_id: sony_tv_active_app_friendly
-        icon: mdi:television-guide
-        state: >
-          {% set s_bravia = states('media_player.tv') | lower %}
-          {% set s_remote = states('media_player.tv_3') | lower %}
-          
-          {% if s_bravia in ['off', 'standby', 'unavailable', 'unknown'] and s_remote in ['off', 'standby', 'unavailable', 'unknown'] %}
-            Off
-          {% else %}
-            {% set app_raw = state_attr('media_player.tv', 'app') %}
-            {% set app = app_raw | lower if app_raw is not none else '' %}
-            {% set app_id = state_attr('media_player.tv', 'app_id') | lower if state_attr('media_player.tv', 'app_id') is not none else '' %}
-            {% set app_name = state_attr('media_player.tv', 'app_name') | string | lower %}
-            {% set title = state_attr('media_player.tv', 'media_title') | lower if state_attr('media_player.tv', 'media_title') is not none else '' %}
-            {% set remote_app = state_attr('media_player.tv_3', 'app') | string | lower %}
-            {% set remote_id = state_attr('media_player.tv_3', 'app_id') | string | lower %}
-            
-            {% if 'game' in app or 'game' in app_id or 'game' in app_name or 'crossyroad' in remote_id or 'crossyroad' in remote_app or 'hdmi' in remote_id or 'hdmi' in remote_app %}
-              Gaming Mode
-            {% elif 'youtube' in app or 'youtube' in app_id or 'youtube' in app_name or app_id == '2c6a6e3d' or 'youtube' in remote_app or 'youtube' in remote_id %}
-              YouTube
-            {% elif 'hotstar' in app or 'hotstar' in app_id or 'hotstar' in app_name or 'androidnativeapp' in app_id or 'cnbc' in title or 'hotstar' in remote_app or 'hotstar' in remote_id %}
-              JioHotstar / Live TV
-            {% elif 'skylake' in app_id or 'skytv' in app_id or 'jio' in app_id or 'jio' in app_name or 'jiotv' in app_name or 'skylake' in remote_id or 'skytv' in remote_id %}
-              JioTV
-            {% elif 'netflix' in app or 'netflix' in app_id or 'netflix' in app_name or 'netflix' in remote_app or 'netflix' in remote_id %}
-              Netflix
-            {% elif 'amazonvideo' in app or 'prime' in app or 'amazon' in app_id or 'prime' in app_name or 'prime' in remote_app or 'amazon' in remote_id %}
-              Prime Video
-            {% elif 'castle' in app or 'castle' in app_id or 'castle' in remote_app or 'castle' in remote_id %}
-              Castle
-            {% elif 'spotify' in app or 'spotify' in app_id or 'spotify' in app_name or app_id == 'cad366a1' or 'spotify' in remote_app or 'spotify' in remote_id %}
-              Spotify
-            {% elif 'alexa' in app or 'alexa' in app_id or 'alexa' in app_name or 'alexa' in remote_app %}
-              Alexa Help
-            {% elif app in ['', 'none'] or app_name in ['', 'none', 'launcher', 'null'] or 'launcher' in app_id or 'projengmenu' in app_id or 'projengmenu' in remote_id or remote_id in ['com.spocky.projengmenu', 'launcher'] %}
-              Home Screen
-            {% else %}
-              {{ state_attr('media_player.tv', 'app_name') or state_attr('media_player.tv', 'app') or state_attr('media_player.tv_3', 'app') or 'Home Screen' }}
-            {% endif %}
-          {% endif %}
-        attributes:
-          media_title: >
-            {% set title = state_attr('media_player.tv', 'media_title') %}
-            {% set artist = state_attr('media_player.tv', 'media_artist') %}
-            {% set s_bravia = states('media_player.tv') | lower %}
-            {% if s_bravia in ['off', 'standby'] and states('media_player.tv_3') not in ['off', 'standby', 'unavailable', 'unknown'] %}
-              Console Gameplay / Arcade
-            {% elif title not in [none, '', 'None', 'unknown'] %}
-              {% if artist not in [none, '', 'None', 'unknown'] %}
-                {{ artist }} - {{ title }}
-              {% else %}
-                {{ title }}
-              {% endif %}
-            {% else %}
-              No Media Playing
-            {% endif %}
-
-
 # =========================================================================
 # UTILITY METER CORE (CYCLE CALIBRATION)
 # =========================================================================
@@ -833,4 +811,3 @@ network_scanner:
   mac_mapping_22: "B0:52:16:BD:51:73;SonyTv;Sony Corporation"
   mac_mapping_23: "C2:A5:C4:F8:BB:20;Anonymized Client (bb:20);Network Client"
   mac_mapping_24: "42:2F:34:04:3B:A8;Private Mobile Suffix (3b:a8);Unknown"
-
