@@ -15,33 +15,33 @@ cards:
         name: Current Cycle
         icon: mdi:play-circle-outline
         state: >-
-          {% if states('sensor.dishwasher') in ['Off', 'unavailable', 'unknown']
-          %}
+          {% if states('sensor.dishwasher') | default('') in ['Off',
+          'unavailable', 'unknown'] %}
             -
           {% else %}
-            {{ states('sensor.dishwasher_current_course') | title }}
+            {{ states('sensor.dishwasher_current_course') | default('') | trim | title }}
           {% endif %}
       - type: custom:template-entity-row
         entity: sensor.dishwasher_initial_time
         name: Initial Cycle Time
         icon: mdi:clock-outline
         state: >-
-          {% if states('sensor.dishwasher') in ['Off', 'unavailable', 'unknown']
-          %}
+          {% if states('sensor.dishwasher') | default('') in ['Off',
+          'unavailable', 'unknown'] %}
             0:00:00
           {% else %}
-            {{ states('sensor.dishwasher_initial_time') }}
+            {{ states('sensor.dishwasher_initial_time') | default('0:00:00') }}
           {% endif %}
       - type: custom:template-entity-row
         entity: sensor.dishwasher_countdown_time
         name: Remaining Time
         icon: mdi:timer-sand
         state: >-
-          {% if states('sensor.dishwasher') in ['Off', 'unavailable', 'unknown']
-          %}
+          {% if states('sensor.dishwasher') | default('') in ['Off',
+          'unavailable', 'unknown'] %}
             Ready
           {% else %}
-            {{ states('sensor.dishwasher_countdown_time') }}
+            {{ states('sensor.dishwasher_countdown_time') | default('') }}
           {% endif %}
       - type: section
       - entity: sensor.dishwasher_last_cycle_energy_consumption
