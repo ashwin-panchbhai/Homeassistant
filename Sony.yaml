@@ -20,14 +20,14 @@ cards:
                 title: 📺 Entertainment Tracker
                 content: >-
                   **Active Application:** {{ states('sensor.sony_tv_active_app')
-                  | title }}
+                  | default('') | trim | title }}
 
-                  {% set media = state_attr('media_player.tv_3', 'media_title')
+                  {% set media = (state_attr('media_player.tv_3', 'media_title')
                   | default(state_attr('sensor.sony_tv_active_app',
-                  'media_title'), true) %}  **Currently Playing:** *{{ media if
-                  media not in ['No Media Playing', 'Console Gameplay / Arcade',
-                  'unknown', 'none', 'None', none, ''] else '⏸️ Standby / Idle'
-                  }}*
+                  'media_title') | default(''))) %} **Currently Playing:** *{{
+                  media if media not in ['No Media Playing', 'Console Gameplay /
+                  Arcade', 'unknown', 'none', 'None', none, ''] else '⏸️ Standby
+                  / Idle' }}*
               - type: grid
                 square: false
                 columns: 2
@@ -66,9 +66,9 @@ cards:
                     color: amber
                     state: >-
                       {% set watts = states('sensor.sony_tv_custom_live_power')
-                      | float(0) %}  {% set rate =
+                      | float(0) %} {% set rate =
                       states('sensor.mahavitran_live_cost_per_unit') |
-                      float(6.68) %}  ₹{{ ((watts / 1000) * rate) | round(2)
+                      float(6.68) %} ₹{{ ((watts / 1000) * rate) | round(2)
                       }}/hr
                     secondary_text: >-
                       Current Tariff Multiplier: ₹{{
