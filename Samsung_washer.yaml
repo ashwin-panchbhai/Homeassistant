@@ -17,15 +17,42 @@ cards:
                 align-items: center;
               }
               .card-header .name::after {
-                content: " - {{ states('select.washer') | title }}";
+                content: " - {{ states('select.washer') | default('') | trim | title }}";
               }
         entities:
-          - entity: sensor.washer_display_status
+          - type: custom:template-entity-row
             name: Machine Status
             icon: mdi:power
-          - entity: sensor.washer_display_stage
+            state: >-
+              {% set s = states('sensor.washer_display_status') | default('') |
+              trim %} {% if s in ['unavailable', 'unknown', 'none', ''] %}
+                Off
+              {% else %}
+                {{ s }}
+              {% endif %}
+          - type: custom:template-entity-row
             name: Active Stage
             icon: mdi:sync
+            state: >-
+              {% set st = states('sensor.washer_display_stage') | default('') |
+              trim %} {% if st in ['unavailable', 'unknown', 'none', ''] %}
+                -
+              {% else %}
+                {{ st }}
+              {% endif %}
+          - type: section
+          - entity: sensor.samsung_washer_initial_time
+            name: Initial Time
+            icon: mdi:clock-outline
+            secondary: >-
+              {{ states('sensor.samsung_washer_initial_time') |
+              default('0:00:00') }}
+          - entity: sensor.samsung_washer_remaining_time
+            name: Remaining Time
+            icon: mdi:timer-sand
+            secondary: >-
+              {{ states('sensor.samsung_washer_remaining_time') |
+              default('0:00:00') }}
           - type: section
           - entity: sensor.samsung_washer_powercalc_energy
             name: Last Wash Energy
@@ -53,25 +80,19 @@ cards:
             entity: sensor.samsung_washer_tub_maintenance
             name: Tub Maintenance
             state: >-
-              {% set status = states('sensor.samsung_washer_tub_maintenance') %}
-              {% if status == 'Required' %}
+              {% set status = states('sensor.samsung_washer_tub_maintenance') |
+              default('') | trim %} {% if status == 'Required' %}
                 ⚠️ Clean Required
               {% else %}
                 Clean / OK
               {% endif %}
             icon: >-
-              {% if states('sensor.samsung_washer_tub_maintenance') ==
-              'Required' %}
+              {% if states('sensor.samsung_washer_tub_maintenance') |
+              default('') == 'Required' %}
                 mdi:alert-circle-outline
               {% else %}
                 mdi:sparkles
               {% endif %}
-          - entity: sensor.samsung_washer_initial_time
-            name: Initial Time
-            icon: mdi:clock-outline
-          - entity: sensor.samsung_washer_remaining_time
-            name: Remaining Time
-            icon: mdi:timer-sand
     grid_options:
       columns: 12
       rows: auto
