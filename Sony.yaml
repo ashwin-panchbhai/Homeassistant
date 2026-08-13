@@ -19,15 +19,9 @@ cards:
               - type: markdown
                 title: 📺 Entertainment Tracker
                 content: >-
-                  **Active Application:** {{ states('sensor.sony_tv_active_app')
-                  | default('') | trim | title }}
+                  **Active Application:** {{ states('sensor.sony_tv_active_app') | default('') | trim | title }}
 
-                  {% set media = (state_attr('media_player.tv_3', 'media_title')
-                  | default(state_attr('sensor.sony_tv_active_app',
-                  'media_title') | default(''))) %} **Currently Playing:** *{{
-                  media if media not in ['No Media Playing', 'Console Gameplay /
-                  Arcade', 'unknown', 'none', 'None', none, ''] else '⏸️ Standby
-                  / Idle' }}*
+                  {% set media = (state_attr('media_player.tv_3', 'media_title') | default(state_attr('sensor.sony_tv_active_app', 'media_title') | default(''))) %} **Currently Playing:** *{{ media if media not in ['No Media Playing', 'Console Gameplay / Arcade', 'unknown', 'none', 'None', none, ''] else '⏸️ Standby / Idle' }}*
               - type: grid
                 square: false
                 columns: 2
@@ -65,15 +59,9 @@ cards:
                     icon: mdi:lightning-bolt
                     color: amber
                     state: >-
-                      {% set watts = states('sensor.sony_tv_custom_live_power')
-                      | float(0) %} {% set rate =
-                      states('sensor.mahavitran_live_cost_per_unit') |
-                      float(6.68) %} ₹{{ ((watts / 1000) * rate) | round(2)
-                      }}/hr
+                      {% set watts = states('sensor.sony_tv_custom_live_power') | float(0) %} {% set rate = states('sensor.mahavitran_live_cost_per_unit') | float(6.68) %} ₹{{ ((watts / 1000) * rate) | round(2) }}/hr
                     secondary_text: >-
-                      Current Tariff Multiplier: ₹{{
-                      states('sensor.mahavitran_live_cost_per_unit') |
-                      float(6.68) }} /kWh
+                      Current Tariff Multiplier: ₹{{ states('sensor.mahavitran_live_cost_per_unit') | float(6.68) }} /kWh
           - type: logbook
             title: 🎥 Content History Log
             hours_to_show: 24
