@@ -1,0 +1,71 @@
+type: grid
+cards:
+  - type: heading
+    heading: Dishwasher
+    heading_style: title
+  - type: entities
+    title: LG QuadWash
+    show_header_toggle: false
+    entities:
+      - entity: sensor.dishwasher
+        name: Machine Status
+        icon: mdi:power
+      - type: custom:template-entity-row
+        entity: sensor.dishwasher_current_course
+        name: Current Cycle
+        icon: mdi:play-circle-outline
+        state: >-
+          {% if states('sensor.dishwasher') in ['Off', 'unavailable', 'unknown']
+          %}
+            -
+          {% else %}
+            {{ states('sensor.dishwasher_current_course') | title }}
+          {% endif %}
+      - type: custom:template-entity-row
+        entity: sensor.dishwasher_initial_time
+        name: Initial Cycle Time
+        icon: mdi:clock-outline
+        state: >-
+          {% if states('sensor.dishwasher') in ['Off', 'unavailable', 'unknown']
+          %}
+            0:00:00
+          {% else %}
+            {{ states('sensor.dishwasher_initial_time') }}
+          {% endif %}
+      - type: custom:template-entity-row
+        entity: sensor.dishwasher_countdown_time
+        name: Remaining Time
+        icon: mdi:timer-sand
+        state: >-
+          {% if states('sensor.dishwasher') in ['Off', 'unavailable', 'unknown']
+          %}
+            Ready
+          {% else %}
+            {{ states('sensor.dishwasher_countdown_time') }}
+          {% endif %}
+      - type: section
+      - entity: sensor.dishwasher_last_cycle_energy_consumption
+        name: Last Wash Energy
+        icon: mdi:lightning-bolt
+      - entity: sensor.dishwasher_last_cycle_cost_inr
+        name: Last Wash Cost
+        icon: mdi:currency-inr
+      - entity: sensor.dishwasher_daily_running_cost_inr
+        name: Today's Cost
+        icon: mdi:calendar-today
+      - entity: sensor.dishwasher_billing_cycle_running_cost_inr
+        name: Month Cycle Cost
+        icon: mdi:calendar-month
+      - entity: sensor.dishwasher_projected_monthly_cost_inr
+        name: Projected Cost
+        icon: mdi:trending-up
+      - type: section
+      - entity: binary_sensor.dishwasher_auto_door
+        name: Auto Door
+        icon: mdi:door-open
+      - entity: binary_sensor.dishwasher_rinse_refill
+        name: Rinse Aid Status
+        icon: mdi:water-alert
+      - entity: sensor.dishwasher_tub_clean_counter
+        name: Tub Maintenance Cycles
+        icon: mdi:alert-circle-outline

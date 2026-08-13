@@ -1,0 +1,124 @@
+type: grid
+square: false
+columns: 1
+cards:
+  - type: heading
+    heading: Current Reading
+    heading_style: title
+    icon: mdi:meter-electric-outline
+  - type: vertical-stack
+    cards:
+      - type: grid
+        square: false
+        columns: 2
+        cards:
+          - type: entities
+            title: ⚡ Account Info
+            show_header_toggle: false
+            entities:
+              - type: custom:template-entity-row
+                name: Link
+                icon: >-
+                  {% if
+                  is_state_attr('sensor.mahavitran_current_month_usage_calculated',
+                  'data_status', 'Live') %}
+                    mdi:cloud-check
+                  {% else %}
+                    mdi:cloud-alert
+                  {% endif %}
+                state: >-
+                  {% if
+                  is_state_attr('sensor.mahavitran_current_month_usage_calculated',
+                  'data_status', 'Live') %}
+                    🟢 LIVE
+                  {% else %}
+                    ⚠️ CACHED
+                  {% endif %}
+              - entity: sensor.mahavitran_estimated_monthly_bill
+                name: Total Due
+              - entity: sensor.mahavitran_current_month_usage_calculated
+                name: Cycle Usage
+              - entity: sensor.mahavitran_current_unit_rate
+                name: Active Rate
+              - type: custom:template-entity-row
+                name: Current Slab
+                state: >-
+                  {% set usage =
+                  states('sensor.mahavitran_current_month_usage_calculated') |
+                  float(0) %} {% if usage <= 100 %}
+                    🟢 0-100
+                  {% elif usage <= 300 %}
+                    🟡 101-300
+                  {% else %}
+                    🔴 >300
+                  {% endif %}
+                icon: mdi:file-document-check
+                tap_action:
+                  action: more-info
+                  entity: sensor.mahavitran_current_month_usage_calculated
+          - type: entities
+            title: 📊 Breakdown
+            show_header_toggle: false
+            entities:
+              - type: custom:template-entity-row
+                name: Fixed Fee
+                icon: mdi:cash-lock
+                state: ₹435.00
+              - entity: sensor.mahavitran_core_energy_cost_calculated
+                name: Core Energy
+              - entity: sensor.mahavitran_wheeling_infra_cost_calculated
+                name: Wheeling
+              - entity: sensor.mahavitran_fuel_surcharge_cost_calculated
+                name: Surcharge
+              - type: custom:template-entity-row
+                name: Solar Credits
+                icon: mdi:solar-power
+                state: -₹42.50
+              - type: custom:template-entity-row
+                name: Adjustments
+                icon: mdi:account-arrow-left
+                state: -₹32.06
+      - type: grid
+        square: false
+        columns: 4
+        cards:
+          - type: custom:mushroom-template-card
+            entity: sensor.mahavitran_units_consumed_since_bill_date
+            icon: mdi:calendar-check
+            icon_color: light-blue
+            primary: >-
+              {{ states('sensor.mahavitran_units_consumed_since_bill_date') }}
+              kWh
+            secondary: >-
+              Since {{
+              as_timestamp(states('input_datetime.mahavitran_last_bill_date')) |
+              timestamp_custom('%b %-d', true) }}
+            fill_container: true
+            layout: horizontal
+            tap_action:
+              action: more-info
+          - type: tile
+            entity: sensor.mahavitran_smart_meter_170781431187_current_reading
+            name: Odometer
+            color: blue
+          - type: tile
+            entity: >-
+              sensor.mahavitran_smart_meter_170781431187_cumulative_hourly_import_today
+            name: Today Import
+            color: green
+          - type: tile
+            entity: button.mahavitran_smart_meter_170781431187_force_update
+            name: Sync
+            color: amber
+      - type: history-graph
+        entities:
+          - entity: sensor.mahavitran_smart_meter_170781431187_current_reading
+            name: Odometer History (kWh)
+        hours_to_show: 24
+    grid_options:
+      columns: 24
+      rows: auto
+grid_options:
+  columns: 12
+  rows: auto
+column_span: 2

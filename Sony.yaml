@@ -1,0 +1,85 @@
+type: grid
+cards:
+  - type: vertical-stack
+    cards:
+      - type: heading
+        heading: SonyTV
+        heading_style: title
+        icon: mdi:television
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: vertical-stack
+            cards:
+              - type: history-graph
+                entities:
+                  - entity: sensor.sony_tv_active_app
+                hours_to_show: 24
+              - type: markdown
+                title: 📺 Entertainment Tracker
+                content: >-
+                  **Active Application:** {{ states('sensor.sony_tv_active_app')
+                  | title }}
+
+                  {% set media = state_attr('media_player.tv_3', 'media_title')
+                  | default(state_attr('sensor.sony_tv_active_app',
+                  'media_title'), true) %}  **Currently Playing:** *{{ media if
+                  media not in ['No Media Playing', 'Console Gameplay / Arcade',
+                  'unknown', 'none', 'None', none, ''] else '⏸️ Standby / Idle'
+                  }}*
+              - type: grid
+                square: false
+                columns: 2
+                cards:
+                  - type: tile
+                    entity: sensor.sony_tv_custom_live_power
+                    name: Live Wattage Load
+                    color: orange
+                    icon: mdi:flash
+                  - type: tile
+                    name: Accumulated Power
+                    color: green
+                    icon: mdi:counter
+                    entity: sensor.living_room_tv_sony_tv_daily_energy_counter
+              - type: grid
+                square: false
+                columns: 2
+                cards:
+                  - type: tile
+                    name: Daily TV Bill Cost
+                    color: red
+                    icon: mdi:currency-inr
+                    entity: sensor.sony_tv_daily_electricity_cost_inr
+                  - type: tile
+                    name: Month TV Bill Cost
+                    color: purple
+                    icon: mdi:account-cash
+                    entity: sensor.sony_tv_projected_monthly_cost_inr
+              - type: entities
+                show_header_toggle: false
+                state_color: true
+                entities:
+                  - type: custom:template-entity-row
+                    name: Estimated Live Burn Rate
+                    icon: mdi:lightning-bolt
+                    color: amber
+                    state: >-
+                      {% set watts = states('sensor.sony_tv_custom_live_power')
+                      | float(0) %}  {% set rate =
+                      states('sensor.mahavitran_live_cost_per_unit') |
+                      float(6.68) %}  ₹{{ ((watts / 1000) * rate) | round(2)
+                      }}/hr
+                    secondary_text: >-
+                      Current Tariff Multiplier: ₹{{
+                      states('sensor.mahavitran_live_cost_per_unit') |
+                      float(6.68) }} /kWh
+          - type: logbook
+            title: 🎥 Content History Log
+            hours_to_show: 24
+            entities:
+              - sensor.sony_tv_active_app
+    grid_options:
+      columns: 24
+      rows: auto
+column_span: 2

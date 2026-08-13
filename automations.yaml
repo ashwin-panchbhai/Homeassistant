@@ -1,0 +1,107 @@
+- id: track_tv_app_history
+  alias: Log TV App and Content History
+  triggers:
+  - trigger: state
+    entity_id: sensor.sony_tv_active_app
+  conditions:
+  - condition: template
+    value_template: >-
+      {{ states('sensor.sony_tv_active_app') not in ['Off', 'unknown', 'unavailable', 'Home Screen'] and 
+         state_attr('sensor.sony_tv_active_app', 'media_title') not in ['No Media Playing', 'Console Gameplay / Arcade', 'unknown', 'none', 'None', '', none] }}
+  actions:
+  - delay: 2
+  - condition: template
+    value_template: >-
+      {{ state_attr('sensor.sony_tv_active_app', 'media_title') not in ['No Media Playing', 'unknown', 'none', 'None', '', none] }}
+  - action: logbook.log
+    data:
+      name: "📺 TV Tracker"
+      entity_id: sensor.sony_tv_active_app
+      message: Watching {{ states('sensor.sony_tv_active_app') }} — {{ state_attr('sensor.sony_tv_active_app', 'media_title') }}
+
+- id: '1785443211493'
+  alias: Mahavitran 90 Unit Slab Alert
+  description: Triggers a single smartphone alert when monthly usage crosses 90 units to warn before Tier-2 pricing hits.
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.mahavitran_current_month_usage_calculated
+      above: 90
+  conditions:
+    - condition: template
+      value_template: >-
+        {{ trigger.from_state is not none and trigger.from_state.state not in ['unknown', 'unavailable', 'none'] }}
+  actions:
+    - action: notify.notify
+      data:
+        title: "⚠️ Mahavitran Tier Bracket Warning"
+        message: >-
+          Current Month Usage has reached {{ states('sensor.mahavitran_current_month_usage_calculated') }} kWh. 
+          Your upcoming energy consumption will now execute via Tier-2 progressive slab rates. 
+          Estimated Current Accumulation: ₹{{ states('sensor.mahavitran_estimated_monthly_bill') }}.
+  mode: single
+
+- id: sony_tv_nightly_cost_summary_notification
+  alias: Sony TV Nightly Cost Summary Notification
+  triggers:
+    - trigger: time
+      at: '22:00:00'
+  conditions:
+    - condition: numeric_state
+      entity_id: sensor.living_room_tv_sony_tv_daily_energy_counter
+      above: 0.01
+  actions:
+    - action: notify.notify
+      data:
+        title: "📺 Sony TV Consumption Report"
+        message: >-
+          Your television consumed {{ states('sensor.living_room_tv_sony_tv_daily_energy_counter') }} kWh today. 
+          Total Daily Electricity Cost: ₹{{ states('sensor.sony_tv_daily_electricity_cost_inr_2') }}. 
+          (Calculated via Live Dynamic Tariff Multiplier: ₹{{ states('sensor.mahavitran_live_cost_per_unit') }}/kWh).
+  mode: single
+
+- id: '1785578250153'
+  alias: "Mahavitran: Billing Cycle Auto Anchor"
+  description: "Automates monthly bill calculation resets at midnight on the 9th"
+  trigger:
+    - platform: time
+      at: "00:00:00"
+  condition:
+    # Executes automatically at midnight exclusively on the 9th day of the month
+    - condition: template
+      value_template: "{{ now().day == 9 }}"
+    # Enterprise Safety Check: Verify the odometer sensor is communicating and online
+    - condition: template
+      value_template: >-
+        {% set odo = states('sensor.mahavitran_smart_meter_170781431187_current_reading') %}
+        {{ odo not in ['unknown', 'unavailable', 'none'] and (odo | float(0)) > 1000 }}
+  action:
+    # 1. Snapshots the live odometer reading into your numeric helper on the bill date
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.mahavitran_last_bill_reading
+      data:
+        value: "{{ states('sensor.mahavitran_smart_meter_170781431187_current_reading') | float }}"
+    # 2. Automatically updates your dashboard card date display string to today's date
+    - action: input_datetime.set_value
+      target:
+        entity_id: input_datetime.mahavitran_last_bill_date
+      data:
+        date: "{{ now().strftime('%Y-%m-%d') }}"
+  mode: single
+
+
+- id: '1785664703598'
+  alias: 'Dishwasher: Telemetry Core Cache Reset'
+  description: Resets or snapshots micro-telemetry metrics right at wash initialization.
+  triggers:
+  - entity_id: sensor.dishwasher_current_status
+    from: initial
+    to: running
+    trigger: state
+  conditions: []
+  actions:
+  - action: persistent_notification.create
+    data:
+      title: Dishwasher Telemetry
+      message: New cycle initiated. Micro-level cost tracking templates have been reset.
+  mode: single

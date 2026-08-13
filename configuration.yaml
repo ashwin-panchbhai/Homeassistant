@@ -1,0 +1,836 @@
+# =========================================================================
+# HOME ASSISTANT CORE DEFINITIONS
+# =========================================================================
+default_config:
+
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+# =========================================================================
+# POWERCALC INTEGRATION VIRTUAL METER ENGINE
+# =========================================================================
+powercalc:
+  sensors:
+    # --- 1. HALL FAN LEFT ---
+    - entity_id: fan.hall_two
+      unique_id: powercalc_hall_fan_left
+      name: "Hall Fan Left Consumption"
+      mode: fixed
+      create_energy_sensor: true
+      ignore_unavailable_state: false
+      fixed:
+        power: >
+          {% if is_state('device_tracker.espressif_e9_24_e0', 'home') %}
+            {% set p = state_attr('fan.hall_two', 'percentage') | int(0) %}
+            {% if is_state('fan.hall_two', 'off') %} 0.5
+            {% elif p == 16 %} 3.8
+            {% elif p == 33 %} 7.7
+            {% elif p == 50 %} 13.8
+            {% elif p == 66 %} 22.7
+            {% elif p == 83 %} 28.0
+            {% elif p == 100 %} 35.0
+            {% else %} 0.5 {% endif %}
+          {% else %} 0.0 {% endif %}
+
+    # --- 2. HALL FAN RIGHT ---
+    - entity_id: fan.hall_one
+      unique_id: powercalc_hall_fan_right
+      name: "Hall Fan Right Consumption"
+      mode: fixed
+      create_energy_sensor: true
+      ignore_unavailable_state: false
+      fixed:
+        power: >
+          {% if is_state('device_tracker.espressif_54_a0_7c', 'home') %}
+            {% set p = state_attr('fan.hall_one', 'percentage') | int(0) %}
+            {% if is_state('fan.hall_one', 'off') %} 0.5
+            {% elif p == 16 %} 3.8
+            {% elif p == 33 %} 7.7
+            {% elif p == 50 %} 13.8
+            {% elif p == 66 %} 22.7
+            {% elif p == 83 %} 28.0
+            {% elif p == 100 %} 35.0
+            {% else %} 0.5 {% endif %}
+          {% else %} 0.0 {% endif %}
+
+    # --- 3. K FAN ---
+    - entity_id: fan.k_fan
+      unique_id: powercalc_k_fan
+      name: "K Fan Consumption"
+      mode: fixed
+      create_energy_sensor: true
+      ignore_unavailable_state: false
+      fixed:
+        power: >
+          {% if is_state('device_tracker.espressif_4c_73_ec', 'home') %}
+            {% set p = state_attr('fan.k_fan', 'percentage') | int(0) %}
+            {% if is_state('fan.k_fan', 'off') %} 0.5
+            {% elif p == 16 %} 3.8
+            {% elif p == 33 %} 7.7
+            {% elif p == 50 %} 13.8
+            {% elif p == 66 %} 22.7
+            {% elif p == 83 %} 28.0
+            {% elif p == 100 %} 35.0
+            {% else %} 0.5 {% endif %}
+          {% else %} 0.0 {% endif %}
+
+    # --- 4. KITCHEN FAN ---
+    - entity_id: fan.kitchen_fan
+      unique_id: powercalc_kitchen_fan
+      name: "Kitchen Fan Consumption"
+      mode: fixed
+      create_energy_sensor: true
+      ignore_unavailable_state: false
+      fixed:
+        power: >
+          {% if is_state('device_tracker.espressif_4b_e6_c4', 'home') %}
+            {% set p = state_attr('fan.kitchen_fan', 'percentage') | int(0) %}
+            {% if is_state('fan.kitchen_fan', 'off') %} 0.5
+            {% elif p == 16 %} 3.8
+            {% elif p == 33 %} 7.7
+            {% elif p == 50 %} 13.8
+            {% elif p == 66 %} 22.7
+            {% elif p == 83 %} 28.0
+            {% elif p == 100 %} 35.0
+            {% else %} 0.5 {% endif %}
+          {% else %} 0.0 {% endif %}
+
+    # --- 5. BEDROOM FAN ---
+    - entity_id: fan.fan
+      unique_id: powercalc_bedroom_fan
+      name: "Bedroom Fan Consumption"
+      mode: fixed
+      create_energy_sensor: true
+      ignore_unavailable_state: false
+      fixed:
+        power: >
+          {% if is_state('device_tracker.espressif_65_e2_34', 'home') %}
+            {% set p = state_attr('fan.fan', 'percentage') | int(0) %}
+            {% if is_state('fan.fan', 'off') %} 0.5
+            {% elif p == 16 %} 3.8
+            {% elif p == 33 %} 7.7
+            {% elif p == 50 %} 13.8
+            {% elif p == 66 %} 22.7
+            {% elif p == 83 %} 28.0
+            {% elif p == 100 %} 35.0
+            {% else %} 0.5 {% endif %}
+          {% else %} 0.0 {% endif %}
+
+    # --- 6. SONY BRAVIA 49" TV ---
+    - entity_id: media_player.tv_3
+      unique_id: sony_tv_consumption_dynamic
+      name: "TV Consumption"
+      mode: fixed
+      create_energy_sensor: true
+      fixed:
+        power: >
+          {% set tv_state = states('media_player.tv_3') | lower %}
+          {% set active_app = states('sensor.sony_tv_active_app') %}
+          {% if tv_state in ['off', 'standby', 'unavailable', 'unknown'] %}
+            0.5
+          {% elif tv_state in ['on', 'playing', 'idle', 'paused', 'buffering'] %}
+            {% if active_app == 'Gaming Mode' %} 125.0
+            {% elif active_app in ['JioHotstar / Live TV', 'JioTV', 'Netflix', 'Prime Video', 'Castle'] %} 110.0
+            {% elif active_app in ['YouTube', 'Spotify'] %} 85.0
+            {% else %} 65.0 {% endif %}
+          {% else %}
+            0.5
+          {% endif %}
+
+    # --- 6B. SONY TV APP DIAGNOSTIC LINKED METER ---
+    - entity_id: sensor.sony_tv_active_app
+      unique_id: powercalc_sony_tv_app_sensor_diagnostic
+      name: "Sony TV App Sensor Power Monitor"
+      mode: fixed
+      create_energy_sensor: false
+      fixed:
+        states_power:
+          "Home Screen": 65.0
+          "Gaming Mode": 125.0
+          "YouTube": 85.0
+          "Spotify": 85.0
+          "JioHotstar / Live TV": 110.0
+          "JioTV": 110.0
+          "Netflix": 110.0
+          "Prime Video": 110.0
+          "Castle": 110.0
+          "Off": 0.5
+
+
+    # --- 7. LG QUADWASH DISHWASHER (ENTERPRISE-GRADE SPECIFICATIONS) ---
+    - entity_id: sensor.dishwasher
+      unique_id: powercalc_lg_dishwasher
+      name: "LG Dishwasher Consumption"
+      mode: fixed
+      create_energy_sensor: true
+      ignore_unavailable_state: false
+      fixed:
+        power: >-
+          {% if states('sensor.dishwasher') | trim | lower in ['unavailable', 'unknown'] or states('sensor.dishwasher_process_state') | trim | lower in ['unavailable', 'unknown'] %}
+            0.0
+          {% elif states('sensor.dishwasher_countdown_time') | trim in ['0:00:00', '0:00', '0'] %}
+            0.5
+          {% elif states('binary_sensor.dishwasher_auto_door') | trim | lower in ['on', 'open', 'true'] and states('sensor.dishwasher_process_state') | trim | lower in ['off', '-', 'standby', 'dry', 'drying', 'none', ''] %}
+            4.2
+          {% elif states('sensor.dishwasher') | trim | lower in ['off', 'power_off', 'power_fail', 'end', 'initial'] or states('sensor.dishwasher_process_state') | trim | lower in ['off', '-', 'standby', 'none', ''] %}
+            0.5
+          {% elif states('sensor.dishwasher') | trim | lower == 'pause' %}
+            3.8
+          {% elif states('sensor.dishwasher_process_state') | trim | lower in ['rinsing', 'rinse'] or states('sensor.dishwasher_current_course') | trim | lower == 'rinse' %}
+            65.0
+          {% elif states('sensor.dishwasher_process_state') | trim | lower in ['dry', 'drying', 'night dry', 'night_dry'] %}
+            30.0
+          {% elif states('sensor.dishwasher_process_state') | trim | lower in ['washing', 'wash'] %}
+            {% set course = states('sensor.dishwasher_current_course') | trim | lower %}
+            {% if course == 'eco' %} 850.0
+            {% elif course == 'auto' %} 1200.0
+            {% elif course in ['turbo', 'express'] %} 1450.0
+            {% elif course == 'intensive' %} 1650.0
+            {% else %} 1200.0
+            {% endif %}
+          {% else %}
+            1.2
+          {% endif %}
+
+    # --- 8. NOKIA G-140W-F GATEWAY ROUTER (DYNAMIC TRAFFIC LOAD) ---
+    - entity_id: device_tracker.nokia_shanghai_bell_c2_07_10
+      unique_id: powercalc_nokia_router
+      name: "Nokia Router Consumption"
+      mode: fixed
+      create_energy_sensor: true
+      ignore_unavailable_state: false
+      fixed:
+        power: >
+          {% set speed = states('sensor.internet_home_gateway_device_download_speed') | float(0.0) %}
+          {% if speed <= 10.0 %}
+            7.0
+          {% elif speed > 10.0 and speed <= 500.0 %}
+            8.5
+          {% elif speed > 500.0 and speed <= 5000.0 %}
+            9.8
+          {% else %}
+            11.5
+          {% endif %}
+
+    # --- 9. TAPO C-225 SECURITY CAMERA (MOTION & PRIVACY PROFILE) ---
+    - entity_id: camera.door_hd_stream
+      unique_id: powercalc_tapo_camera_c225
+      name: "Tapo Camera Consumption"
+      mode: fixed
+      create_energy_sensor: true
+      ignore_unavailable_state: true
+      fixed:
+        power: "{% if states('camera.door_hd_stream') | lower in ['unavailable', 'unknown'] %}0.0{% elif states('binary_sensor.door_privacy_mode') | lower == 'on' %}1.8{% elif states('binary_sensor.door_motion_detection') | lower == 'on' and states('switch.door_auto_track') | lower == 'on' %}6.5{% elif states('camera.door_hd_stream') | lower == 'streaming' or states('camera.door_hd_stream_direct') | lower == 'streaming' %}4.5{% else %}3.0{% endif %}"
+
+    # --- 10. HIKVISION INDOOR STATION SCREEN (COMPACT STATE PROFILE) ---
+    - entity_id: device_tracker.fn_link_technology_88_65_c3
+      unique_id: powercalc_hikvision_indoor_screen
+      name: "Hikvision Camera Screen Consumption"
+      mode: fixed                     # Structure: Set back to 'fixed' to pass validation
+      create_energy_sensor: true
+      ignore_unavailable_state: false # Structure: Set to false to avoid the tracker state bug
+      fixed:
+        power: >                      # Structure: Consolidates execution strings natively
+          {% if states('device_tracker.fn_link_technology_88_65_c3') | lower in ['unavailable', 'unknown', 'not_home'] or states('sensor.embedded_net_vis_call_status') | lower in ['unavailable', 'unknown'] %}
+            1.5
+          {% elif states('device_tracker.fn_link_technology_88_65_c3') | lower != 'home' %}
+            0.0
+          {% else %}
+            {% if states('sensor.embedded_net_vis_call_status') | string | strip | lower in ['ringing', 'talk', 'call', 'active'] %}
+              6.0
+            {% elif states('sensor.embedded_net_vis_call_status') | string | strip | lower == 'idle' %}
+              4.0
+            {% else %}
+              1.5
+            {% endif %}
+          {% endif %}
+
+    # --- 12. SAMSUNG WASHER PRODUCTION CONFIG ----
+    - entity_id: sensor.washer_machine_state
+      unique_id: samsung_washer_powercalc
+      name: "Samsung Washer Powercalc"
+      mode: fixed
+      create_energy_sensor: true
+      ignore_unavailable_state: true
+      fixed:
+        power: >-
+          {% set machine = (states('sensor.washer_machine_state')) | lower %}
+          
+          {# #1. Machine completely Off or disconnected #}
+          {% if machine in ['unavailable', 'unknown', 'none', 'stop', 'stopped'] %}
+            0.0
+
+          {# 2. Machine is On but paused/idle #}
+          {% elif machine == 'pause' %}
+            4.0
+            
+          {# 3. Machine is actively executing a cycle #}
+          {% elif machine == 'run' %}
+            {% set job = states('sensor.washer_job_state') | lower %}
+            {% set temp = states('select.washer_water_temperature') | lower %}
+            {% set spin = states('select.washer_spin_level') | lower %}
+            
+            {# Phase A: Weighing/Sensing initial load #}
+            {% if job in ['weight_sensing', 'none'] %}
+              60.0
+              
+            {# Phase B: Washing with High Hot Water Temp (Heater Active) #}
+            {% elif job in ['wash', 'pre_wash', 'delay_wash'] and temp in ['60', '90'] %}
+              1800.0
+            {% elif job in ['wash', 'pre_wash', 'delay_wash'] and temp == '40' %}
+              1000.0
+              
+            {# Phase C: Washing with Cold / Eco Temperature #}
+            {% elif job in ['wash', 'pre_wash', 'delay_wash'] %}
+              150.0
+              
+            {# Phase D: High Speed Spinning extraction #}
+            {% elif job in ['spin', 'ai_spin'] and spin in ['1000', '1200', '1400'] %}
+              450.0
+            {% elif job in ['spin', 'ai_spin'] %}
+              250.0
+              
+            {# Phase E: Rinsing, Pump discharging, and Cooling #}
+            {% elif job in ['rinse', 'ai_rinse', 'cooling'] %}
+              80.0
+              
+            {# Phase F: Finished cycle, standing by / wrinkle prevention tumbling #}
+            {% elif job in ['finish', 'wrinkle_prevent'] %}
+              45.0
+            {% else %}
+              150.0
+            {% endif %}
+            
+          {# Fallback #}
+          {% else %}
+            0.5
+          {% endif %}
+
+# =========================================================================
+# TEMPLATE SENSORS ENGINE (COMPUTATIONS & CALCULATIONS)
+# =========================================================================
+template:
+  - sensor:
+      # --- LG DISHWASHER MAIN STATUS BRIDGES ---
+      - name: "Dishwasher Current Status"
+        unique_id: dishwasher_current_status
+        icon: mdi:power
+        state: >-
+          {% set device = states('device_tracker.lg_innotek_ab_84_7c') %}
+          {% set pwr = states('sensor.dishwasher') | lower %}
+          {% set run_state = states('sensor.dishwasher') %}
+          {% if device in ['unavailable', 'unknown', 'not_home'] or pwr in ['off', 'power_off'] %}
+            Off
+          {% elif pwr == 'on' and run_state not in ['unavailable', 'unknown', 'standby', 'none', '-', ''] %}
+            {{ run_state }}
+          {% else %}
+            Standby
+          {% endif %}
+
+      - name: "Dishwasher Process State"
+        unique_id: dishwasher_process_state_bridge
+        icon: mdi:sync
+        state: >-
+          {% set process = states('sensor.dishwasher_process_state') %}
+          {% if process not in ['unavailable', 'unknown', 'none', ''] %}
+            {{ process }}
+          {% else %}
+            -
+          {% endif %}
+
+      # --- DISHWASHER MICRO-MONITORING CORE ---
+      - name: "Dishwasher Last Cycle Energy Consumption"
+        unique_id: dishwasher_last_cycle_energy_consumption
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state: >-
+          {% set current_status = states('sensor.dishwasher') | lower %}
+          {% set telemetry_energy = states('sensor.lg_dishwasher_consumption_energy') | float(none) %}
+          {% set stored_cache = states('sensor.dishwasher_last_cycle_energy_consumption') | float(0.0) %}
+          {% if current_status == 'end' and telemetry_energy is not none and telemetry_energy > 0.0 %}
+            {{ telemetry_energy | round(3) }}
+          {% else %}
+            {{ stored_cache }}
+          {% endif %}
+
+      # --- DISHWASHER LAST CYCLE COST ENGINE ---
+      - name: "Dishwasher Last Cycle Cost INR"
+        unique_id: dishwasher_last_cycle_cost_inr
+        icon: mdi:currency-inr
+        unit_of_measurement: "INR"
+        state: >-
+          {% set kwh = states('sensor.dishwasher_last_cycle_energy_consumption') | float(0) %}
+          {% set rate = states('sensor.mahavitran_current_unit_rate') | float(6.69) %}
+          {{ (kwh * rate) | round(2) }}
+
+      # --- DISHWASHER PROJECTED MONTHLY COST ENGINE ---
+      - name: "Dishwasher Projected Monthly Cost INR"
+        unique_id: dishwasher_projected_monthly_cost_inr
+        icon: mdi:currency-inr
+        unit_of_measurement: "INR"
+        state: >-
+          {% set energy = states('sensor.dishwasher_billing_cycle_energy') | float(0) %}
+          {% set rate = states('sensor.mahavitran_current_unit_rate') | float(6.69) %}
+          {% set current_day = now().day %}
+          {% if current_day >= 7 %}
+            {% set days = current_day - 7 + 1 %}
+          {% else %}
+            {% set prev_month_days = (now().replace(day=1) - timedelta(days=1)).day %}
+            {% set days = prev_month_days - 7 + current_day + 1 %}
+          {% endif %}
+          {% set elapsed_days = days if days > 0.5 else 0.5 %}
+          {% if states('sensor.dishwasher_billing_cycle_energy') not in ['unknown', 'unavailable'] and energy > 0.0 %}
+            {% set current_cycle_cost = energy * rate %}
+            {{ ((current_cycle_cost / elapsed_days) * 30.0) | round(2) }}
+          {% else %}
+            {% set fallback = states('sensor.dishwasher_projected_monthly_cost_inr') %}
+            {{ fallback | float(0.0) if fallback not in ['unknown', 'unavailable', 'none'] else 0.00 }}
+          {% endif %}
+
+      # --- DISHWASHER DAILY ELECTRICITY COST ENGINE ---
+      - name: "Dishwasher Daily Running Cost INR"
+        unique_id: dishwasher_daily_running_cost_inr
+        icon: mdi:currency-inr
+        unit_of_measurement: "INR"
+        state: >-
+          {% set energy = states('sensor.dishwasher_daily_energy') | float(0) %}
+          {% set rate = states('sensor.mahavitran_current_unit_rate') | float(6.69) %}
+          {% if states('sensor.dishwasher_daily_energy') not in ['unknown', 'unavailable'] and energy > 0.0 %}
+            {{ (energy * rate) | round(2) }}
+          {% else %}
+            {% set fallback = states('sensor.dishwasher_daily_running_cost_inr') %}
+            {{ fallback | float(0.0) if fallback not in ['unknown', 'unavailable', 'none'] else 0.00 }}
+          {% endif %}
+
+      # --- DISHWASHER BILLING CYCLE RUNNING COST ENGINE ---
+      - name: "Dishwasher Billing Cycle Running Cost INR"
+        unique_id: dishwasher_billing_cycle_running_cost_inr
+        icon: mdi:currency-inr
+        unit_of_measurement: "INR"
+        state: >-
+          {% set energy = states('sensor.dishwasher_billing_cycle_energy') | float(0) %}
+          {% set rate = states('sensor.mahavitran_current_unit_rate') | float(6.69) %}
+          {% if states('sensor.dishwasher_billing_cycle_energy') not in ['unknown', 'unavailable'] and energy > 0.0 %}
+            {{ (energy * rate) | round(2) }}
+          {% else %}
+            {% set fallback = states('sensor.dishwasher_billing_cycle_running_cost_inr') %}
+            {{ fallback | float(0.0) if fallback not in ['unknown', 'unavailable', 'none'] else 0.00 }}
+          {% endif %}
+          
+      # --- SAMSUNG WASHER PROJECTED MONTHLY COST ----
+      - name: "Samsung Washer Projected Monthly Cost INR"
+        unique_id: samsung_washer_projected_monthly_cost_inr
+        icon: mdi:currency-inr
+        unit_of_measurement: "INR"
+        state: >-
+          {% set energy = states('sensor.kitchen_washer_samsung_washer_monthly_energy') | float(0) %}
+          {% set rate = states('sensor.mahavitran_current_unit_rate') | float(6.69) %}
+          {% set current_day = now().day %}
+          {% if current_day >= 7 %}
+            {% set days = current_day - 7 + 1 %}
+          {% else %}
+            {% set prev_month_days = (now().replace(day=1) - timedelta(days=1)).day %}
+            {% set days = prev_month_days - 7 + current_day + 1 %}
+          {% endif %}
+          {% set elapsed_days = days if days > 0.5 else 0.5 %}
+          {% if states('sensor.kitchen_washer_samsung_washer_monthly_energy') not in ['unknown', 'unavailable'] and energy > 0.0 %}
+            {% set current_cycle_cost = energy * rate %}
+            {{ ((current_cycle_cost / elapsed_days) * 30.0) | round(2) }}
+          {% else %}
+            {% set fallback = states('sensor.samsung_washer_projected_monthly_cost_inr') %}
+            {{ fallback | float(0.0) if fallback not in ['unknown', 'unavailable', 'none'] else 0.00 }}
+          {% endif %}
+
+      # --- SAMSUNG WASHER COST METRICS ---
+      - name: "Washer Last Wash Cost INR"
+        unique_id: washer_last_wash_cost_inr
+        icon: mdi:currency-inr
+        unit_of_measurement: "INR"
+        state: >-
+          {% set energy = states('sensor.samsung_washer_powercalc_energy') | float(0) %}
+          {% set rate = states('sensor.mahavitran_current_unit_rate') | float(6.69) %}
+          {{ (energy * rate) | round(2) }}
+
+      - name: "Washer Today Running Cost INR"
+        unique_id: washer_today_running_cost_inr
+        icon: mdi:calendar-today
+        unit_of_measurement: "INR"
+        state: >-
+          {% set energy = states('sensor.samsung_washer_powercalc_energy') | float(0) %}
+          {% set rate = states('sensor.mahavitran_current_unit_rate') | float(6.69) %}
+          {{ (energy * rate) | round(2) }}
+
+      - name: "Washer Current Bill Cycle Cost INR"
+        unique_id: washer_current_bill_cycle_cost_inr
+        icon: mdi:calendar-month
+        unit_of_measurement: "INR"
+        state: >-
+          {% set energy = states('sensor.kitchen_washer_samsung_washer_monthly_energy') | float(0) %}
+          {% set rate = states('sensor.mahavitran_current_unit_rate') | float(6.69) %}
+          {% if states('sensor.kitchen_washer_samsung_washer_monthly_energy') not in ['unknown', 'unavailable'] and energy > 0.0 %}
+            {{ (energy * rate) | round(2) }}
+          {% else %}
+            {{ states('sensor.washer_current_bill_cycle_cost_inr') | float(0.0) }}
+          {% endif %}
+
+      # --- SAMSUNG WASHER INFERRED INITIAL RUNTIME ----
+      - name: "Samsung Washer Initial Time"
+        unique_id: samsung_washer_initial_time
+        icon: mdi:clock-outline
+        state: >-
+          {% set job = states('sensor.washer_job_state') | lower | trim %}
+          {% set temp = states('select.washer_water_temperature') | lower | trim %}
+          {% if job in ['unavailable', 'unknown', 'none', 'finish', 'stopped', 'off'] or temp in ['none', 'unavailable', 'unknown'] %}
+            0:00:00
+          {% else %}
+            {% if temp in ['60', '90'] %}
+              02:15:00
+            {% elif temp == '40' %}
+              01:45:00
+            {% else %}
+              01:15:00
+            {% endif %}
+          {% endif %}
+
+
+      # --- SAMSUNG WASHER COMPUTED REMAINING TIME ----
+      - name: "Samsung Washer Remaining Time"
+        unique_id: samsung_washer_remaining_time
+        icon: mdi:timer-sand
+        state: >-
+          {% set job = states('sensor.washer_job_state') | lower | trim %}
+          {% set completion = states('sensor.washer_completion_time') | trim %}
+          {% if job not in ['unavailable', 'unknown', 'none', 'finish', 'stopped', 'off'] and completion not in ['unknown', 'unavailable', 'none', '', '-'] %}
+            {% set total_seconds = (as_datetime(completion) - now()).total_seconds() %}
+            {% if total_seconds > 0 %}
+              {% set hours = (total_seconds // 3600) | int %}
+              {% set minutes = ((total_seconds % 3600) // 60) | int %}
+              {{ '%02d:%02d:00' | format(hours, minutes) }}
+            {% else %}
+              0:00:00
+            {% endif %}
+          {% else %}
+            0:00:00
+          {% endif %}
+
+      # --- SAMSUNG WASHER TUB MAINTENANCE TRACKER ----
+      - name: "Samsung Washer Tub Maintenance"
+        unique_id: samsung_washer_tub_maintenance
+        icon: mdi:sparkles
+        state: >-
+          {% set status = states('sensor.washer_display_status') | lower | trim %}
+          {% set job = states('sensor.washer_job_state') | lower | trim %}
+          {% if 'clean' in status or 'clean' in job or status in ['eco_tub_clean', 'tub_clean'] %}
+            Required
+          {% else %}
+            OK
+          {% endif %}
+
+
+      # --- SONY TV DAILY ELECTRICITY COST ----
+      - name: "Sony TV Daily Electricity Cost INR 2"
+        unique_id: sony_tv_daily_electricity_cost_inr_2
+        icon: mdi:currency-inr
+        unit_of_measurement: "INR"
+        state: >-
+          {% set energy = states('sensor.living_room_tv_sony_tv_daily_energy_counter') | float(0) %}
+          {% set rate = states('sensor.mahavitran_live_cost_per_unit') | float(6.68) %}
+          {{ (energy * rate) | round(2) }}
+
+      # --- SONY TV PROJECTED MONTHLY COST ----
+      - name: "Sony TV Projected Monthly Cost INR"
+        unique_id: sony_tv_projected_monthly_cost_inr
+        icon: mdi:currency-inr
+        unit_of_measurement: "INR"
+        state: >-
+          {% set daily_energy = states('sensor.living_room_tv_sony_tv_daily_energy_counter') | float(0) %}
+          {% set rate = states('sensor.mahavitran_live_cost_per_unit') | float(6.68) %}
+          {% set current_day = now().day %}
+          {% if current_day >= 7 %}
+            {% set days = current_day - 7 + 1 %}
+          {% else %}
+            {% set prev_month_days = (now().replace(day=1) - timedelta(days=1)).day %}
+            {% set days = prev_month_days - 7 + current_day + 1 %}
+          {% endif %}
+          {% set elapsed_days = days if days > 0.5 else 0.5 %}
+          {% set current_month_pace = (daily_energy / elapsed_days) * 30.0 %}
+          {{ (current_month_pace * rate) | round(2) }}
+
+      # --- SONY TV CUSTOM LIVE POWER METER ----
+      - name: "Sony TV Custom Live Power"
+        unique_id: sony_tv_custom_live_power_override
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >-
+          {% set master_app = states('sensor.sony_tv_active_app') | string | trim %}
+          {% if master_app in ['Off', 'unknown', 'unavailable', 'None', 'none', ''] %}
+            0.0
+          {% elif master_app == 'Home Screen' %}
+            65.0
+          {% elif master_app == 'Gaming Mode' %}
+            125.0
+          {% elif master_app in ['JioHotstar / Live TV', 'JioTv', 'Netflix', 'Prime Video', 'Castle'] %}
+            110.0
+          {% elif master_app in ['YouTube', 'Spotify'] %}
+            85.0
+          {% else %}
+            65.0
+          {% endif %}
+
+      # --- MAHAVITRAN LIVE USAGE CONSOLIDATION CALCULATOR ---
+      - name: "Mahavitran Current Month Usage Calculated"
+        unique_id: mahavitran_current_month_usage_calculated
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total
+        attributes:
+          last_valid_usage: >-
+            {% set tracker = states('sensor.living_room_mahavitran_smart_meter_170781431187_mahavitran_monthly_usage_tracker') | float(-1) %}
+            {% if tracker >= 0.0 %}
+              {{ tracker | round(2) }}
+            {% else %}
+              {% set self_state = states('sensor.mahavitran_current_month_usage_calculated') | float(-1) %}
+              {{ self_state if self_state >= 0.0 else 0.0 }}
+            {% endif %}
+          data_status: >-
+            {% set connection = states('sensor.mahavitran_smart_meter_170781431187_connection_status') %}
+            {% set tracker = states('sensor.living_room_mahavitran_smart_meter_170781431187_mahavitran_monthly_usage_tracker') %}
+            {% if connection == 'Connected' and tracker not in ['unknown', 'unavailable'] and (tracker | float(0)) >= 0.0 %}
+              Live
+            {% else %}
+              Cached Fallback
+            {% endif %}
+        state: >-
+          {% set base_reading = states('sensor.mahavitran_smart_meter_170781431187_current_reading') | float(-1) %}
+          {% set anchor_reading = states('input_number.mahavitran_last_bill_reading') | float(-1) %}
+          {% set tracker = states('sensor.living_room_mahavitran_smart_meter_170781431187_mahavitran_monthly_usage_tracker') | float(-1) %}
+          {% if base_reading > 0.0 and anchor_reading > 0.0 and base_reading >= anchor_reading %}
+            {{ (base_reading - anchor_reading) | round(2) }}
+          {% elif tracker >= 0.0 %}
+            {{ tracker | round(2) }}
+          {% else %}
+            {{ state_attr('sensor.mahavitran_current_month_usage_calculated', 'last_valid_usage') | float(0.0) }}
+          {% endif %}
+
+      # --- MAHAVITRAN AUGUST TRUE RESET ADJUSTMENT TRACKER ---
+      - name: "Mahavitran Units Consumed Since Bill Date"
+        unique_id: mahavitran_units_consumed_since_bill_date
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        attributes:
+          dynamic_date_label: >-
+            Since {{ as_timestamp(states('input_datetime.mahavitran_last_bill_date')) | timestamp_custom('%b %-d', true) }}
+        state: >-
+          {% set current_odo = states('sensor.mahavitran_smart_meter_170781431187_current_reading') | float(-1) %}
+          {% if current_odo > 0.0 %}
+            {{ (current_odo - 1437.0) | round(2) }}
+          {% else %}
+            {{ states('sensor.mahavitran_units_consumed_since_bill_date') | float(0.0) }}
+          {% endif %}
+
+
+      # --- MAHAVITRAN SUB-COMPONENT ENGINE: CORE ENERGY ---
+      - name: "Mahavitran Core Energy Cost Calculated"
+        unique_id: mahavitran_core_energy_cost_calculated
+        unit_of_measurement: "INR"
+        device_class: monetary
+        state: >-
+          {# Dynamic enterprise tier selection mapping #}
+          {% set live_usage = states('sensor.mahavitran_current_month_usage_calculated') | float(-1) %}
+          {% set true_august_usage = states('sensor.mahavitran_units_consumed_since_bill_date') | float(-1) %}
+          {% set usage = true_august_usage if (live_usage >= 0.0 and live_usage < 5.0 and true_august_usage > live_usage) else live_usage %}
+          {% if usage < 0.0 %}
+            {{ states('sensor.mahavitran_core_energy_cost_calculated') | float(0.0) }}
+          {% elif usage <= 100 %}
+            {{ (usage * 3.96) | round(2) }}
+          {% elif usage <= 300 %}
+            {{ ((100 * 3.96) + ((usage - 100) * 10.80)) | round(2) }}
+          {% elif usage <= 500 %}
+            {{ ((100 * 3.96) + (200 * 10.80) + ((usage - 300) * 15.03)) | round(2) }}
+          {% else %}
+            {{ ((100 * 3.96) + (200 * 10.80) + (200 * 15.03) + ((usage - 500) * 17.53)) | round(2) }}
+          {% endif %}
+
+      # --- MAHAVITRAN SUB-COMPONENT ENGINE: WHEELING INFRA ---
+      - name: "Mahavitran Wheeling Infra Cost Calculated"
+        unique_id: mahavitran_wheeling_infra_cost_calculated
+        unit_of_measurement: "INR"
+        device_class: monetary
+        state: >-
+          {% set live_usage = states('sensor.mahavitran_current_month_usage_calculated') | float(-1) %}
+          {% set true_august_usage = states('sensor.mahavitran_units_consumed_since_bill_date') | float(-1) %}
+          {% set usage = true_august_usage if (live_usage >= 0.0 and live_usage < 5.0 and true_august_usage > live_usage) else live_usage %}
+          {% if usage < 0.0 %}
+            {{ states('sensor.mahavitran_wheeling_infra_cost_calculated') | float(0.0) }}
+          {% else %}
+            {{ (usage * 1.60) | round(2) }}
+          {% endif %}
+
+      # --- MAHAVITRAN SUB-COMPONENT ENGINE: FUEL SURCHARGE (FAC) ---
+      - name: "Mahavitran Fuel Surcharge Cost Calculated"
+        unique_id: mahavitran_fuel_surcharge_cost_calculated
+        unit_of_measurement: "INR"
+        device_class: monetary
+        state: >-
+          {% set live_usage = states('sensor.mahavitran_current_month_usage_calculated') | float(-1) %}
+          {% set true_august_usage = states('sensor.mahavitran_units_consumed_since_bill_date') | float(-1) %}
+          {% set usage = true_august_usage if (live_usage >= 0.0 and live_usage < 5.0 and true_august_usage > live_usage) else live_usage %}
+          {% if usage < 0.0 %}
+            {{ states('sensor.mahavitran_fuel_surcharge_cost_calculated') | float(0.0) }}
+          {% elif usage <= 100 %}
+            {{ (usage * 0.200) | round(2) }}
+          {% elif usage <= 300 %}
+            {{ ((100 * 0.200) + ((usage - 100) * 0.350)) | round(2) }}
+          {% elif usage <= 500 %}
+            {{ ((100 * 0.200) + (200 * 0.350) + ((usage - 300) * 0.500)) | round(2) }}
+          {% else %}
+            {{ ((100 * 0.200) + (200 * 0.350) + (200 * 0.500) + ((usage - 500) * 0.550)) | round(2) }}
+          {% endif %}
+
+      # --- POWERCALC COMPATIBLE: SMOOTH VARIABLE COST SCALAR ---
+      - name: "Mahavitran Current Unit Rate"
+        unique_id: mahavitran_current_unit_rate
+        unit_of_measurement: "INR/kWh"
+        state: >-
+          {% set live_usage = states('sensor.mahavitran_current_month_usage_calculated') | float(0) %}
+          {% set true_august_usage = states('sensor.mahavitran_units_consumed_since_bill_date') | float(0) %}
+          {% set usage = true_august_usage if (live_usage >= 0.0 and live_usage < 5.0 and true_august_usage > live_usage) else live_usage %}
+          {% set tax_rate = 0.16 %}
+          {% set energy = states('sensor.mahavitran_core_energy_cost_calculated') | float(0) %}
+          {% set wheeling = states('sensor.mahavitran_wheeling_infra_cost_calculated') | float(0) %}
+          {% set fac = states('sensor.mahavitran_fuel_surcharge_cost_calculated') | float(0) %}
+          {% if usage <= 0.0 %}
+            {{ ((3.96 + 1.60 + 0.200) * (1 + tax_rate)) | round(2) }}
+          {% else %}
+            {% set dynamic_average_variable_rate = (energy + wheeling + fac) / usage %}
+            {{ (dynamic_average_variable_rate * (1 + tax_rate)) | round(2) }}
+          {% endif %}
+
+      # --- MAHAVITRAN PROGRESSIVE BILL AGGREGATOR ----
+      - name: "Mahavitran Estimated Monthly Bill"
+        unique_id: mahavitran_estimated_monthly_bill
+        unit_of_measurement: "INR"
+        device_class: monetary
+        state: >-
+          {% set fixed_charge = 435.00 %}
+          {% set government_subsidy = 42.50 %}
+          {% set adjustments = 32.06 %}
+          {% set tax_rate = 0.16 %}
+          {% set energy = states('sensor.mahavitran_core_energy_cost_calculated') | float(0) %}
+          {% set wheeling = states('sensor.mahavitran_wheeling_infra_cost_calculated') | float(0) %}
+          {% set fac = states('sensor.mahavitran_fuel_surcharge_cost_calculated') | float(0) %}
+          {% set base_taxable_subtotal = fixed_charge + energy + wheeling + fac %}
+          {% set electricity_duty = base_taxable_subtotal * tax_rate %}
+          {% set net_bill = base_taxable_subtotal + electricity_duty - government_subsidy - adjustments %}
+          {{ net_bill | round(2) if net_bill > 0.0 else 0.00 }}
+
+      # --- SONY TV ENGINE ACTIVE APPLICATION RESOLVER ---
+      - name: "Sony TV Active App"
+        unique_id: sony_tv_active_app_friendly
+        icon: mdi:television-guide
+        state: >
+          {% set s_bravia = states('media_player.tv') | lower %}
+          {% set s_remote = states('media_player.tv_3') | lower %}
+          
+          {% if s_bravia in ['off', 'standby', 'unavailable', 'unknown'] and s_remote in ['off', 'standby', 'unavailable', 'unknown'] %}
+            Off
+          {% else %}
+            {% set app_raw = state_attr('media_player.tv', 'app') %}
+            {% set app = app_raw | lower if app_raw is not none else '' %}
+            {% set app_id = state_attr('media_player.tv', 'app_id') | lower if state_attr('media_player.tv', 'app_id') is not none else '' %}
+            {% set app_name = state_attr('media_player.tv', 'app_name') | string | lower %}
+            {% set title = state_attr('media_player.tv', 'media_title') | lower if state_attr('media_player.tv', 'media_title') is not none else '' %}
+            {% set remote_app = state_attr('media_player.tv_3', 'app') | string | lower %}
+            {% set remote_id = state_attr('media_player.tv_3', 'app_id') | string | lower %}
+            
+            {% if 'game' in app or 'game' in app_id or 'game' in app_name or 'crossyroad' in remote_id or 'crossyroad' in remote_app or 'hdmi' in remote_id or 'hdmi' in remote_app %}
+              Gaming Mode
+            {% elif 'youtube' in app or 'youtube' in app_id or 'youtube' in app_name or app_id == '2c6a6e3d' or 'youtube' in remote_app or 'youtube' in remote_id %}
+              YouTube
+            {% elif 'hotstar' in app or 'hotstar' in app_id or 'hotstar' in app_name or 'androidnativeapp' in app_id or 'cnbc' in title or 'hotstar' in remote_app or 'hotstar' in remote_id %}
+              JioHotstar / Live TV
+            {% elif 'skylake' in app_id or 'skytv' in app_id or 'jio' in app_id or 'jio' in app_name or 'jiotv' in app_name or 'skylake' in remote_id or 'skytv' in remote_id %}
+              JioTV
+            {% elif 'netflix' in app or 'netflix' in app_id or 'netflix' in app_name or 'netflix' in remote_app or 'netflix' in remote_id %}
+              Netflix
+            {% elif 'amazonvideo' in app or 'prime' in app or 'amazon' in app_id or 'prime' in app_name or 'prime' in remote_app or 'amazon' in remote_id %}
+              Prime Video
+            {% elif 'castle' in app or 'castle' in app_id or 'castle' in remote_app or 'castle' in remote_id %}
+              Castle
+            {% elif 'spotify' in app or 'spotify' in app_id or 'spotify' in app_name or app_id == 'cad366a1' or 'spotify' in remote_app or 'spotify' in remote_id %}
+              Spotify
+            {% elif 'alexa' in app or 'alexa' in app_id or 'alexa' in app_name or 'alexa' in remote_app %}
+              Alexa Help
+            {% elif app in ['', 'none'] or app_name in ['', 'none', 'launcher', 'null'] or 'launcher' in app_id or 'projengmenu' in app_id or 'projengmenu' in remote_id or remote_id in ['com.spocky.projengmenu', 'launcher'] %}
+              Home Screen
+            {% else %}
+              {{ state_attr('media_player.tv', 'app_name') or state_attr('media_player.tv', 'app') or state_attr('media_player.tv_3', 'app') or 'Home Screen' }}
+            {% endif %}
+          {% endif %}
+        attributes:
+          media_title: >
+            {% set title = state_attr('media_player.tv', 'media_title') %}
+            {% set artist = state_attr('media_player.tv', 'media_artist') %}
+            {% set s_bravia = states('media_player.tv') | lower %}
+            {% if s_bravia in ['off', 'standby'] and states('media_player.tv_3') not in ['off', 'standby', 'unavailable', 'unknown'] %}
+              Console Gameplay / Arcade
+            {% elif title not in [none, '', 'None', 'unknown'] %}
+              {% if artist not in [none, '', 'None', 'unknown'] %}
+                {{ artist }} - {{ title }}
+              {% else %}
+                {{ title }}
+              {% endif %}
+            {% else %}
+              No Media Playing
+            {% endif %}
+
+
+# =========================================================================
+# UTILITY METER CORE (CYCLE CALIBRATION)
+# =========================================================================
+utility_meter:
+  dishwasher_daily_energy:
+    source: sensor.lg_dishwasher_consumption_energy_2
+    cycle: daily
+
+  dishwasher_billing_cycle_energy:
+    source: sensor.lg_dishwasher_consumption_energy_2
+    cycle: monthly
+    offset:
+      days: 7
+
+# ==============================================================================
+# --- NETWORK SCANNER ROUTER IMPORT CONFIGURATION ---
+# ==============================================================================
+network_scanner:
+  ip_range: "192.168.1.0/24"
+  mac_mapping_1: "78:17:35:C2:07:10;Nokia Router;Nokia Shanghai Bell"
+  mac_mapping_2: "BC:07:1D:D2:CE:71;Camera-C225;TP-Link Smart Home"
+  mac_mapping_3: "40:F4:C9:88:65:C3;Camera-Screen;Smart Display"
+  mac_mapping_4: "A8:46:74:E9:24:E0;Fan-Hall-Left;Atomberg Technologies"
+  mac_mapping_5: "A8:46:74:54:A0:7C;Fan-Hall-Right;Atomberg Technologies"
+  mac_mapping_6: "50:78:7D:4C:73:EC;Fan-Kid;Atomberg Technologies"
+  mac_mapping_7: "3C:84:27:4B:E6:C4;Fan-Kitchen;Atomberg Technologies"
+  mac_mapping_8: "DC:06:75:65:E2:34;Fan-Master;Atomberg Technologies"
+  mac_mapping_9: "50:5B:C2:BF:35:C3;Home-Laptop;Windows Wireless Client"
+  mac_mapping_10: "40:C7:3C:5B:AD:06;Work Laptop Host;Intel Corporate"
+  mac_mapping_11: "28:24:C9:C8:10:4A;Alexa;Amazon Echo Smart Speaker"
+  mac_mapping_12: "F4:14:BF:AB:84:7C;LG Dishwasher;LG Electronics"
+  mac_mapping_13: "46:8F:43:75:0E:6B;OnePlus;Mobile Device"
+  mac_mapping_14: "28:6B:B4:4B:54:6A;Samsung AC-Kid;Samsung Electronics"
+  mac_mapping_15: "28:6B:B4:41:7F:B4;Samsung AC-Master;Samsung Electronics"
+  mac_mapping_16: "28:6B:B4:BA:E7:BF;Samsung Fridge;Samsung Electronics"
+  mac_mapping_17: "F4:02:28:FE:FD:BF;Samsung S21;Samsung Electronics"
+  mac_mapping_18: "BC:10:2F:5A:3E:B9;Samsung Washer;Samsung Electronics"
+  mac_mapping_19: "48:E7:29:9A:F0:D8;SmartSwitch-Hall;Wireless Switch"
+  mac_mapping_20: "24:DC:C3:D5:D8:20;SmartSwitch-Kid;Wireless Switch"
+  mac_mapping_21: "28:05:A5:51:E2:68;SmartSwitch-Master;Wireless Switch"
+  mac_mapping_22: "B0:52:16:BD:51:73;SonyTv;Sony Corporation"
+  mac_mapping_23: "C2:A5:C4:F8:BB:20;Anonymized Client (bb:20);Network Client"
+  mac_mapping_24: "42:2F:34:04:3B:A8;Private Mobile Suffix (3b:a8);Unknown"
+

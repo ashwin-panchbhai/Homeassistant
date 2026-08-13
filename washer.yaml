@@ -1,0 +1,77 @@
+type: grid
+cards:
+  - type: heading
+    heading_style: title
+    heading: Washer
+    icon: mdi:washing-machine
+  - type: vertical-stack
+    cards:
+      - type: entities
+        title: Samsung Washer
+        show_header_toggle: false
+        card_mod:
+          style:
+            .: |
+              .card-header {
+                display: flex;
+                align-items: center;
+              }
+              .card-header .name::after {
+                content: " - {{ states('select.washer') | title }}";
+              }
+        entities:
+          - entity: sensor.washer_display_status
+            name: Machine Status
+            icon: mdi:power
+          - entity: sensor.washer_display_stage
+            name: Active Stage
+            icon: mdi:sync
+          - type: section
+          - entity: sensor.samsung_washer_powercalc_energy
+            name: Last Wash Energy
+            icon: mdi:lightning-bolt
+          - entity: sensor.washer_last_wash_cost_inr
+            name: Last Wash Cost
+            icon: mdi:currency-inr
+          - entity: sensor.washer_today_running_cost_inr
+            name: Today's Cost
+            icon: mdi:calendar-today
+          - entity: sensor.washer_current_bill_cycle_cost_inr
+            name: Month Cycle Cost
+            icon: mdi:calendar-month
+          - entity: sensor.samsung_washer_projected_monthly_cost_inr
+            name: Projected Cost
+            icon: mdi:trending-up
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - entity: binary_sensor.washer_child_lock
+            name: Child Lock Status
+            icon: mdi:account-lock
+          - type: custom:template-entity-row
+            entity: sensor.samsung_washer_tub_maintenance
+            name: Tub Maintenance
+            state: >-
+              {% set status = states('sensor.samsung_washer_tub_maintenance') %}
+              {% if status == 'Required' %}
+                ⚠️ Clean Required
+              {% else %}
+                Clean / OK
+              {% endif %}
+            icon: >-
+              {% if states('sensor.samsung_washer_tub_maintenance') ==
+              'Required' %}
+                mdi:alert-circle-outline
+              {% else %}
+                mdi:sparkles
+              {% endif %}
+          - entity: sensor.samsung_washer_initial_time
+            name: Initial Time
+            icon: mdi:clock-outline
+          - entity: sensor.samsung_washer_remaining_time
+            name: Remaining Time
+            icon: mdi:timer-sand
+    grid_options:
+      columns: 12
+      rows: auto
