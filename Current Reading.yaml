@@ -20,20 +20,25 @@ cards:
                 name: Link
                 icon: >-
                   {% if
-                  is_state_attr('sensor.mahavitran_current_month_usage_calculated',
-                  'data_status', 'Live') %}
+                  state_attr('sensor.mahavitran_current_month_usage_calculated','data_source')
+                  == 'Live' %}
                     mdi:cloud-check
                   {% else %}
                     mdi:cloud-alert
                   {% endif %}
                 state: >-
-                  {% if
-                  is_state_attr('sensor.mahavitran_current_month_usage_calculated',
-                  'data_status', 'Live') %}
-                    🟢 LIVE
+                  {% set src =
+                  state_attr('sensor.mahavitran_current_month_usage_calculated','data_source')
+                  | default('Cached') %} {% set ts =
+                  state_attr('sensor.mahavitran_current_month_usage_calculated','last_tracker_update')
+                  | default('-') %} {% if src == 'Live' %}
+                    🟢 LIVE{% if ts not in ['','-'] %} ({{ ts }}){% endif %}
                   {% else %}
-                    ⚠️ CACHED
+                    ⚠️ CACHED{% if ts not in ['','-'] %} ({{ ts }}){% endif %}
                   {% endif %}
+                tap_action:
+                  action: more-info
+                  entity: sensor.mahavitran_current_month_usage_calculated
               - entity: sensor.mahavitran_estimated_monthly_bill
                 name: Total Due
               - entity: sensor.mahavitran_current_month_usage_calculated
@@ -90,9 +95,12 @@ cards:
               {{ states('sensor.mahavitran_units_consumed_since_bill_date') }}
               kWh
             secondary: >-
-              Since {{
-              as_timestamp(states('input_datetime.mahavitran_last_bill_date')) |
-              timestamp_custom('%b %-d', true) }}
+              {% set dt = states('input_datetime.mahavitran_last_bill_date') |
+              default('') %} {% if dt not in ['', 'unknown', 'unavailable'] %}
+                Since {{ as_timestamp(dt) | timestamp_custom('%b %-d', true) }}
+              {% else %}
+                Since -
+              {% endif %}
             fill_container: true
             layout: horizontal
             tap_action:
