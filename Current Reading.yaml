@@ -19,19 +19,15 @@ cards:
               - type: custom:template-entity-row
                 name: Link
                 icon: >-
-                  {% if
-                  state_attr('sensor.mahavitran_current_month_usage_calculated','data_source')
-                  == 'Live' %}
+                  {% if state_attr('sensor.mahavitran_current_month_usage_calculated','data_source') == 'Live' %}
                     mdi:cloud-check
                   {% else %}
                     mdi:cloud-alert
                   {% endif %}
                 state: >-
-                  {% set src =
-                  state_attr('sensor.mahavitran_current_month_usage_calculated','data_source')
-                  | default('Cached') %} {% set ts =
-                  state_attr('sensor.mahavitran_current_month_usage_calculated','last_tracker_update')
-                  | default('-') %} {% if src == 'Live' %}
+                  {% set src = state_attr('sensor.mahavitran_current_month_usage_calculated','data_source') | default('Cached') %}
+                  {% set ts = state_attr('sensor.mahavitran_current_month_usage_calculated','last_tracker_update') | default('-') %}
+                  {% if src == 'Live' %}
                     🟢 LIVE{% if ts not in ['','-'] %} ({{ ts }}){% endif %}
                   {% else %}
                     ⚠️ CACHED{% if ts not in ['','-'] %} ({{ ts }}){% endif %}
@@ -48,9 +44,8 @@ cards:
               - type: custom:template-entity-row
                 name: Current Slab
                 state: >-
-                  {% set usage =
-                  states('sensor.mahavitran_current_month_usage_calculated') |
-                  float(0) %} {% if usage <= 100 %}
+                  {% set usage = states('sensor.mahavitran_current_month_usage_calculated') | float(0) %}
+                  {% if usage <= 100 %}
                     🟢 0-100
                   {% elif usage <= 300 %}
                     🟡 101-300
@@ -95,8 +90,8 @@ cards:
               {{ states('sensor.mahavitran_units_consumed_since_bill_date') }}
               kWh
             secondary: >-
-              {% set dt = states('input_datetime.mahavitran_last_bill_date') |
-              default('') %} {% if dt not in ['', 'unknown', 'unavailable'] %}
+              {% set dt = states('input_datetime.mahavitran_last_bill_date') | default('') %}
+              {% if dt not in ['', 'unknown', 'unavailable'] %}
                 Since {{ as_timestamp(dt) | timestamp_custom('%b %-d', true) }}
               {% else %}
                 Since -
